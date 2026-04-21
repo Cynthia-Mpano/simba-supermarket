@@ -459,7 +459,7 @@ export const translations = {
 export type TranslationKey = keyof typeof translations.en;
 
 export function getTranslation(locale: Locale, key: TranslationKey, replacements?: Record<string, string | number>): string {
-  let text = translations[locale][key] || translations.en[key] || key;
+  let text: string = translations[locale][key] || translations.en[key] || key;
   
   if (replacements) {
     Object.entries(replacements).forEach(([k, v]) => {
