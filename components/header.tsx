@@ -46,6 +46,13 @@ export function Header({ onSearch, searchQuery }: HeaderProps) {
             </div>
           </Link>
 
+          {/* Navigation Links - Desktop */}
+          <nav className="hidden lg:flex items-center gap-6 mx-6">
+            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">{t('home')}</Link>
+            <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors">{t('aboutUs')}</Link>
+            <Link href="/#contact" className="text-sm font-medium hover:text-primary transition-colors">{t('contactUs')}</Link>
+          </nav>
+
           {/* Search - Desktop */}
           <div className="hidden md:flex flex-1 max-w-xl mx-8">
             <div className="relative w-full">
@@ -167,7 +174,15 @@ export function Header({ onSearch, searchQuery }: HeaderProps) {
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
             </div>
-            <div className="flex flex-col gap-2 pt-2 border-t border-border">
+            
+            {/* Navigation Links - Mobile */}
+            <div className="flex flex-col gap-2 pt-4 border-t border-border">
+              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium py-1">{t('home')}</Link>
+              <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium py-1">{t('aboutUs')}</Link>
+              <Link href="/#contact" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium py-1">{t('contactUs')}</Link>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-4 border-t border-border">
               <Link href="/api/auth/signin" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="outline" className="w-full">{t('signIn')}</Button>
               </Link>

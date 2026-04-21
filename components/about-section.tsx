@@ -119,9 +119,15 @@ export function AboutSection() {
                 <MapPin className="h-6 w-6 text-primary" />
                 <h3 className="text-xl font-bold text-foreground">Our Branches</h3>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Simba Centenary, Simba Gishushu, Simba Kimironko, Simba Kicukiro, Simba Kigali Heights, Simba UTC, Simba Gacuriro, Simba Gikondo, Simba Sonatube, Simba Kisimenti, Simba Rebero.
-              </p>
+              <ul className="text-sm text-muted-foreground space-y-3 leading-relaxed">
+                <li><strong>Union Trade Centre (UTC):</strong> 1 KN 4 Ave, Kigali</li>
+                <li><strong>Kimironko:</strong> 342F+3V5, Kimironko, Kigali</li>
+                <li><strong>Gisenyi:</strong> 8754+P7W, Gisenyi</li>
+                <li><strong>Musanze:</strong> Central location, Musanze</li>
+                <li><strong>Nyamirambo:</strong> Near Cosmos, Kigali</li>
+                <li><strong>Kigali City Center:</strong> Near Beka</li>
+                <li><strong>Other Kigali Locations:</strong> KN 5 Rd, KG 541 St, KG 192 St, KK 35 Ave (plus Gishushu, Kicukiro, Gacuriro, Gikondo, Sonatube, Kisimenti, Rebero)</li>
+              </ul>
             </div>
 
           </div>
