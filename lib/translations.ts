@@ -12,7 +12,7 @@ export const translations = {
     allCategories: 'All Categories',
     
     // Hero
-    heroTitle: "Rwanda's #1 Online Supermarket",
+    heroTitle: "Fresh From Kigali, Delivered to You",
     heroSubtitle: 'Fresh groceries, household essentials, and more delivered to your door in Kigali.',
     shopNow: 'Shop Now',
     freeDelivery: 'Free delivery on orders over 50,000 RWF',
@@ -163,7 +163,7 @@ export const translations = {
     allCategories: 'Toutes les Catégories',
     
     // Hero
-    heroTitle: 'Supermarché en ligne #1 du Rwanda',
+    heroTitle: 'Frais de Kigali, Livré Chez Vous',
     heroSubtitle: 'Produits frais, articles ménagers et plus livrés à votre porte à Kigali.',
     shopNow: 'Acheter',
     freeDelivery: 'Livraison gratuite sur les commandes de plus de 50 000 RWF',
@@ -314,7 +314,7 @@ export const translations = {
     allCategories: 'Ibyiciro Byose',
     
     // Hero
-    heroTitle: 'Isoko #1 rya Interineti mu Rwanda',
+    heroTitle: 'Bishya biva i Kigali, Bitangiwe Kuri Wowe',
     heroSubtitle: 'Ibiribwa bishya, ibikoresho byo mu rugo, nibindi byinshi bitangiwe ku muryango wawe i Kigali.',
     shopNow: 'Gura Nonaha',
     freeDelivery: 'Kutwara ubuntu ku itumiza rirenze 50,000 RWF',
