@@ -1,29 +1,74 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
+import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
+import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Footer } from '@/components/footer';
 
 const branches = [
-  { name: 'Simba UTC (HQ)', address: '3336+MHV, 1 KN 4 Ave, Kigali', phone: '+250 788 307 200' },
-  { name: 'Simba Centenary', address: 'KN 4 Ave, UTC Building, Kigali', phone: null },
-  { name: 'Simba Gishushu', address: 'KG 541 St, Kigali', phone: null },
-  { name: 'Simba Kimironko', address: '342F+3V5, Kimironko, Kigali', phone: null },
-  { name: 'Simba Kicukiro', address: 'KK 35 Ave, Kigali', phone: null },
-  { name: 'Simba Kigali Heights', address: '24XF+XVV, KG 192 St, Kigali', phone: null },
-  { name: 'Simba Gacuriro', address: '24G3+MCV, Kigali', phone: null },
-  { name: 'Simba Gikondo', address: '23H4+26V, Kigali', phone: null },
-  { name: 'Simba Sonatube', address: '24Q5+R2R, Kigali', phone: null },
-  { name: 'Simba Kisimenti', address: 'KN 5 Rd, Kigali', phone: null },
-  { name: 'Simba Rebero', address: '24J3+Q3, Kigali', phone: null },
+  {
+    name: 'Simba UTC (Head Office)',
+    address: '3336+MHV, Union Trade Centre, 1 KN 4 Ave, Kigali',
+    note: 'Largest & best supermarket in Kigali city center',
+  },
+  {
+    name: 'Simba Kisimenti',
+    address: 'KN 5 Rd, Kigali',
+    note: 'Find everything you want + cooked food, affordable',
+  },
+  {
+    name: 'Simba Gishushu',
+    address: 'KG 541 St, Kigali',
+    note: 'Great location for groceries and home items',
+  },
+  {
+    name: 'Simba Sonatube',
+    address: '24Q5+R2R, Kigali',
+    note: 'Packed with nearly everything you need food-wise',
+  },
+  {
+    name: 'Simba Kimironko',
+    address: '342F+3V5, Kimironko, Kigali',
+    note: 'Serving the Kimironko neighbourhood',
+  },
+  {
+    name: 'Simba Kigali Heights',
+    address: '24XF+XVV, KG 192 St, Kigali',
+    note: 'Convenient location in Kigali Heights area',
+  },
+  {
+    name: 'Simba Gikondo',
+    address: '23H4+26V, Kigali',
+    note: 'Your go-to supermarket in Gikondo',
+  },
+  {
+    name: 'Simba Gacuriro',
+    address: '24G3+MCV, Kigali',
+    note: 'Features Simba Arcade entertainment',
+  },
+  {
+    name: 'Simba Kicukiro',
+    address: 'KK 35 Ave, Kigali',
+    note: 'Serving the Kicukiro district',
+  },
+  {
+    name: 'Simba Rebero',
+    address: '24J3+Q3, Kigali',
+    note: 'Full supermarket service',
+  },
+  {
+    name: 'Simba Gisenyi',
+    address: '8754+P7W, Gisenyi (Rubavu)',
+    note: 'Serving the western province',
+  },
 ];
 
 export default function ContactPage() {
+  const [searchQuery, setSearchQuery] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -31,47 +76,27 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 900));
     setSubmitted(true);
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">S</span>
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="font-bold text-base text-foreground leading-tight">Simba</h1>
-                <p className="text-xs text-muted-foreground -mt-0.5">Supermarket</p>
-              </div>
-            </Link>
-            <Link href="/">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="h-4 w-4" /> Back to Shop
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col">
+      <Header onSearch={setSearchQuery} searchQuery={searchQuery} />
 
       <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-12">
 
-          {/* Page Title */}
+          {/* Title */}
           <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">Contact Us</h1>
             <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-              We're here to help. Reach out to us through any of the channels below or visit one of our 11 branches across Kigali.
+              We're here to help. Visit any of our 11 branches across Rwanda or reach out directly.
             </p>
           </div>
 
-          {/* Contact Cards */}
+          {/* Info Cards */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-colors">
               <div className="h-11 w-11 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
@@ -79,9 +104,9 @@ export default function ContactPage() {
               </div>
               <h3 className="font-semibold text-foreground mb-2">Head Office</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                KN 4 Ave, UTC Building<br />
-                Kiyovu, Kigali<br />
-                Nyarugenge District<br />
+                Union Trade Centre<br />
+                1 KN 4 Ave, Kiyovu<br />
+                Nyarugenge, Kigali<br />
                 P.O. Box 190
               </p>
             </div>
@@ -121,7 +146,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Contact Form + Branch List */}
+          {/* Form + Branches */}
           <div className="grid lg:grid-cols-2 gap-10">
 
             {/* Contact Form */}
@@ -133,9 +158,11 @@ export default function ContactPage() {
                     <CheckCircle className="h-7 w-7 text-green-600 dark:text-green-400" />
                   </div>
                   <h3 className="text-xl font-bold text-foreground mb-2">Message Sent!</h3>
-                  <p className="text-muted-foreground mb-6">Thank you for reaching out. We'll get back to you within 24 hours.</p>
+                  <p className="text-muted-foreground mb-6">
+                    Thank you for reaching out. Our team will get back to you within 24 hours.
+                  </p>
                   <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }); }}>
-                    Send Another
+                    Send Another Message
                   </Button>
                 </div>
               ) : (
@@ -165,22 +192,28 @@ export default function ContactPage() {
               )}
             </div>
 
-            {/* All Branches */}
+            {/* Branches */}
             <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6">Our 11 Branches</h2>
-              <div className="space-y-2">
-                {branches.map((b) => (
+              <h2 className="text-2xl font-bold text-foreground mb-6">Our Branches</h2>
+              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                {branches.map((b, i) => (
                   <div key={b.name} className="flex items-start gap-3 bg-card rounded-xl p-4 border border-border hover:border-primary/40 transition-colors">
                     <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                      <MapPin className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-bold text-primary">{i + 1}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground">{b.name}</p>
                       <p className="text-xs text-muted-foreground">{b.address}</p>
-                      {b.phone && (
-                        <a href={`tel:${b.phone.replace(/\s/g, '')}`} className="text-xs text-primary hover:underline">{b.phone}</a>
-                      )}
+                      <p className="text-xs text-primary/70 mt-0.5 italic">{b.note}</p>
                     </div>
+                    <a
+                      href={`https://maps.google.com/?q=${encodeURIComponent(b.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0"
+                    >
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">Map</Button>
+                    </a>
                   </div>
                 ))}
               </div>
