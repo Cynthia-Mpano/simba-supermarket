@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/lib/supabase';
 import { useStore } from '@/lib/store-context';
 
 export default function SignInPage() {
@@ -22,17 +23,23 @@ export default function SignInPage() {
     setError('');
     setIsLoading(true);
 
-    // Simulate auth — replace with real API call
-    await new Promise(r => setTimeout(r, 800));
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    });
 
-    if (form.email && form.password.length >= 6) {
-      const name = form.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      signIn({ name, email: form.email });
-      router.push('/');
-    } else {
-      setError('Invalid email or password. Please try again.');
+    if (authError) {
+      setError(authError.message);
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+
+    const name = data.user?.user_metadata?.full_name
+      || data.user?.email?.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      || 'User';
+
+    signIn({ name, email: data.user?.email ?? form.email });
+    router.push('/');
   };
 
   return (
@@ -47,7 +54,6 @@ export default function SignInPage() {
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3">
               <span className="text-primary-foreground font-bold text-2xl">S</span>

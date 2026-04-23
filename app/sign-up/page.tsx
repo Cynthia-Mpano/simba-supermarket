@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/lib/supabase';
 import { useStore } from '@/lib/store-context';
 
 export default function SignUpPage() {
@@ -31,11 +32,24 @@ export default function SignUpPage() {
     }
 
     setIsLoading(true);
-    // Simulate registration — replace with real API call
-    await new Promise(r => setTimeout(r, 800));
-    signIn({ name: form.name, email: form.email });
+
+    const { data, error: authError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: { full_name: form.name },
+      },
+    });
+
+    if (authError) {
+      setError(authError.message);
+      setIsLoading(false);
+      return;
+    }
+
+    // Auto sign in after registration
+    signIn({ name: form.name, email: data.user?.email ?? form.email });
     router.push('/');
-    setIsLoading(false);
   };
 
   const passwordStrength = form.password.length === 0 ? 0 : form.password.length < 6 ? 1 : form.password.length < 10 ? 2 : 3;
@@ -54,7 +68,6 @@ export default function SignUpPage() {
 
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-sm">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3">
               <span className="text-primary-foreground font-bold text-2xl">S</span>

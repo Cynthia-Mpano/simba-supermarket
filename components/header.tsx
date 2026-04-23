@@ -24,8 +24,8 @@ interface HeaderProps {
 const navLinks = [
   { label: 'Home', href: '/' },
   { label: 'Shop', href: '/#products' },
-  { label: 'About', href: '/#about' },
-  { label: 'Contact', href: '/#contact' },
+  { label: 'About', href: '/about' },
+  { label: 'Contact', href: '/contact' },
 ];
 
 export function Header({ onSearch, searchQuery }: HeaderProps) {

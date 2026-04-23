@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import type { CartItem, Product } from './types';
 import type { Locale } from './translations';
+import { supabase } from './supabase';
 
 export interface AuthUser {
   name: string;
@@ -119,7 +120,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('simba-user', JSON.stringify(newUser));
   }, []);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
     localStorage.removeItem('simba-user');
   }, []);
