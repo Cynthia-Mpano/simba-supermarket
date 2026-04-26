@@ -32,7 +32,7 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
+    <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30">
       <Link href={`/product/${product.id}`}>
         <div className="relative aspect-square bg-secondary/30 overflow-hidden">
           {!imageError ? (
@@ -55,12 +55,31 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
           {inCart && (
-            <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs font-medium px-2 py-1 rounded-full">
+            <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-medium px-2 py-1 rounded-full z-10">
               {cartQuantity}x
             </div>
           )}
         </div>
       </Link>
+
+      {/* Quick Add Button - Appears on Hover */}
+      <Button
+        variant={inCart ? 'secondary' : 'default'}
+        size="sm"
+        disabled={!product.inStock}
+        onClick={(e) => {
+          e.preventDefault();
+          addToCart(product);
+        }}
+        className={cn(
+          "absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-xl",
+          inCart && 'bg-secondary/90 hover:bg-secondary'
+        )}
+      >
+        {inCart ? <Check className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+        {t('addToCart')}
+      </Button>
+
       <CardContent className="p-4">
         <Link href={`/product/${product.id}`}>
           <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
@@ -69,28 +88,11 @@ export function ProductCard({ product }: ProductCardProps) {
           </h3>
           <p className="text-xs text-muted-foreground mt-1">{product.unit}</p>
         </Link>
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div>
-            <p className="font-bold text-lg text-foreground">
-              {formatPrice(product.price)}
-              <span className="text-xs font-normal text-muted-foreground ml-1">RWF</span>
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant={inCart ? 'secondary' : 'default'}
-            disabled={!product.inStock}
-            onClick={(e) => {
-              e.preventDefault();
-              addToCart(product);
-            }}
-            className={cn(
-              'h-9 w-9 p-0 rounded-full transition-all',
-              inCart && 'bg-primary/10 text-primary hover:bg-primary/20'
-            )}
-          >
-            {inCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          </Button>
+        <div className="mt-3">
+          <p className="font-bold text-lg text-foreground">
+            {formatPrice(product.price)}
+            <span className="text-xs font-normal text-muted-foreground ml-1">RWF</span>
+          </p>
         </div>
       </CardContent>
     </Card>
