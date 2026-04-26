@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { Header } from '@/components/header';
 import { Hero } from '@/components/hero';
 import { ProductCard } from '@/components/product-card';
@@ -10,27 +10,27 @@ import { useStore } from '@/lib/store-context';
 import { getTranslation } from '@/lib/translations';
 import productData from '@/data/products.json';
 import type { Product } from '@/lib/types';
-import { ProductTrie } from '@/lib/trie';
+import { useState } from 'react';
 
 const products = productData.products as Product[];
 
-const trie = new ProductTrie();
-products.forEach(p => {
-  trie.insert(p.name, p);
-  trie.insert(p.category, p);
-});
-
 export default function HomePage() {
-  const { locale } = useStore();
+  const { locale, searchQuery } = useStore();
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(locale, key);
   const productsRef = useRef<HTMLDivElement>(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('default');
   
   const maxPrice = useMemo(() => Math.max(...products.map(p => p.price)), []);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrice]);
+
+  // Scroll to products when search query is set
+  useEffect(() => {
+    if (searchQuery) {
+      productsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [searchQuery]);
 
   const categories = useMemo(() => {
     const cats = [...new Set(products.map(p => p.category))];
@@ -42,14 +42,12 @@ export default function HomePage() {
 
     // Search filter
     if (searchQuery) {
-      const trieResults = trie.searchPrefix(searchQuery);
-      // Deduplicate by ID
-      const seen = new Set();
-      result = trieResults.filter(p => {
-        if (seen.has(p.id)) return false;
-        seen.add(p.id);
-        return true;
-      });
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        p =>
+          p.name.toLowerCase().includes(query) ||
+          p.category.toLowerCase().includes(query)
+      );
     }
 
     // Category filter
@@ -88,7 +86,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onSearch={setSearchQuery} searchQuery={searchQuery} />
+      <Header />
       
       <main className="flex-1">
         <Hero onShopNow={scrollToProducts} />
@@ -97,35 +95,29 @@ export default function HomePage() {
         <section ref={productsRef} id="products" className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">{t('allProducts')}</h2>
           
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
-            <aside className="w-full lg:w-64 flex-shrink-0 lg:sticky lg:top-24 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-hide">
-              <CategoryFilter
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                priceRange={priceRange}
-                maxPrice={maxPrice}
-                onPriceRangeChange={setPriceRange}
-                productCount={filteredProducts.length}
-              />
-            </aside>
+          <CategoryFilter
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            priceRange={priceRange}
+            maxPrice={maxPrice}
+            onPriceRangeChange={setPriceRange}
+            productCount={filteredProducts.length}
+          />
 
-            <div className="flex-1">
-              {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-lg text-muted-foreground">{t('noProducts')}</p>
-                </div>
-              )}
+          {filteredProducts.length > 0 ? (
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="mt-12 text-center py-12">
+              <p className="text-lg text-muted-foreground">{t('noProducts')}</p>
+            </div>
+          )}
         </section>
       </main>
 

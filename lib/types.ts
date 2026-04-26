@@ -32,7 +32,7 @@ export interface CheckoutForm {
   address: string;
   city: string;
   district: string;
-  paymentMethod: 'momo' | 'cash';
+  paymentMethod: 'momo' | 'airtel' | 'cash';
 }
 
 export interface Order {

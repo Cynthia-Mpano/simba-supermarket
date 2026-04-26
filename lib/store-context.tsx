@@ -3,6 +3,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import type { CartItem, Product } from './types';
 import type { Locale } from './translations';
+import { supabase } from './supabase';
+
+export interface AuthUser {
+  name: string;
+  email: string;
+}
 
 interface StoreContextType {
   cart: CartItem[];
@@ -16,6 +22,11 @@ interface StoreContextType {
   setLocale: (locale: Locale) => void;
   isDark: boolean;
   toggleTheme: () => void;
+  user: AuthUser | null;
+  signIn: (user: AuthUser) => void;
+  signOut: () => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -25,6 +36,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('en');
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -48,6 +61,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (savedTheme === 'dark') {
       setIsDark(true);
       document.documentElement.classList.add('dark');
+    }
+
+    const savedUser = localStorage.getItem('simba-user');
+    if (savedUser) {
+      try { setUser(JSON.parse(savedUser)); } catch { /* ignore */ }
     }
   }, []);
 
@@ -100,6 +118,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('simba-locale', newLocale);
   }, []);
 
+  const signIn = useCallback((newUser: AuthUser) => {
+    setUser(newUser);
+    localStorage.setItem('simba-user', JSON.stringify(newUser));
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    localStorage.removeItem('simba-user');
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setIsDark(prev => {
       const newValue = !prev;
@@ -127,6 +156,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setLocale,
         isDark,
         toggleTheme,
+        user,
+        signIn,
+        signOut,
+        searchQuery,
+        setSearchQuery,
       }}
     >
       {children}

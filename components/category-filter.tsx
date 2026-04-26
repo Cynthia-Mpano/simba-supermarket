@@ -1,7 +1,13 @@
 'use client';
 
-import { X, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, X, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Sheet,
   SheetContent,
@@ -57,123 +63,150 @@ export function CategoryFilter({
     }).format(price);
   };
 
-  const hasActiveFilters = selectedCategory || priceRange[0] > 0 || priceRange[1] < maxPrice || sortBy !== 'default';
+  const hasActiveFilters = selectedCategory || priceRange[0] > 0 || priceRange[1] < maxPrice;
 
   const clearFilters = () => {
     onCategoryChange(null);
     onPriceRangeChange([0, maxPrice]);
-    onSortChange('default');
   };
 
-  const FilterContent = () => (
-    <div className="space-y-6">
-      <div>
-        <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wider">{t('categories')}</h4>
-        <div className="flex flex-col gap-1">
-          <Button
-            variant={selectedCategory === null ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => onCategoryChange(null)}
-            className="justify-start font-normal"
-          >
-            {t('allCategories')}
-          </Button>
-          {categories.map((category) => (
-            <Button
-              key={category}
-              variant={selectedCategory === category ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => onCategoryChange(category)}
-              className="justify-start font-normal"
-            >
-              {category}
-            </Button>
-          ))}
-        </div>
-      </div>
-      
-      <div>
-        <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wider">{t('priceRange')}</h4>
-        <div className="px-2">
-          <Slider
-            value={priceRange}
-            onValueChange={(value) => onPriceRangeChange(value as [number, number])}
-            max={maxPrice}
-            step={1000}
-            className="mb-4 mt-2"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground font-medium">
-            <span>{formatPrice(priceRange[0])}</span>
-            <span>{formatPrice(priceRange[1])}</span>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wider">{t('sortBy')}</h4>
-        <div className="flex flex-col gap-1">
-          {sortOptions.map((option) => (
-            <Button
-              key={option.value}
-              variant={sortBy === option.value ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => onSortChange(option.value)}
-              className="justify-start font-normal"
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="w-full">
-      {/* Mobile Top Bar */}
-      <div className="flex lg:hidden items-center justify-between mb-4">
-        <p className="text-sm text-muted-foreground font-medium">
-          {t('showingProducts', { count: productCount })}
-        </p>
-        
-        <div className="flex gap-2">
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs gap-1">
-              <X className="h-3 w-3" />
-              <span className="hidden sm:inline">{t('clearFilters')}</span>
-            </Button>
-          )}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 h-8">
-                <SlidersHorizontal className="h-4 w-4" />
-                {t('filter')}
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[340px] overflow-y-auto">
-              <SheetHeader className="mb-6 text-left">
-                <SheetTitle>{t('filter')}</SheetTitle>
-              </SheetHeader>
-              <FilterContent />
-            </SheetContent>
-          </Sheet>
-        </div>
+    <div className="space-y-4">
+      {/* Category Pills - Horizontal Scrollable */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <Button
+          variant={selectedCategory === null ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => onCategoryChange(null)}
+          className="shrink-0"
+        >
+          {t('allCategories')}
+        </Button>
+        {categories.map((category) => (
+          <Button
+            key={category}
+            variant={selectedCategory === category ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onCategoryChange(category)}
+            className="shrink-0"
+          >
+            {category}
+          </Button>
+        ))}
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-border/50">
-          <p className="text-sm text-muted-foreground font-medium">
+      {/* Filter Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">
             {t('showingProducts', { count: productCount })}
           </p>
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs gap-1 px-2 -mr-2">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs gap-1">
               <X className="h-3 w-3" />
               {t('clearFilters')}
             </Button>
           )}
         </div>
-        <FilterContent />
+
+        <div className="flex items-center gap-2">
+          {/* Mobile Filter Sheet */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="md:hidden gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                {t('filter')}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-auto max-h-[70vh]">
+              <SheetHeader>
+                <SheetTitle>{t('filter')}</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-6 py-4">
+                <div>
+                  <h4 className="font-medium mb-3">{t('categories')}</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={selectedCategory === null ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onCategoryChange(null)}
+                    >
+                      {t('allCategories')}
+                    </Button>
+                    {categories.map((category) => (
+                      <Button
+                        key={category}
+                        variant={selectedCategory === category ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => onCategoryChange(category)}
+                      >
+                        {category}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-3">{t('priceRange')}</h4>
+                  <Slider
+                    value={priceRange}
+                    onValueChange={(value) => onPriceRangeChange(value as [number, number])}
+                    max={maxPrice}
+                    step={1000}
+                    className="mb-2"
+                  />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>{formatPrice(priceRange[0])} RWF</span>
+                    <span>{formatPrice(priceRange[1])} RWF</span>
+                  </div>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Desktop Price Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="hidden md:flex gap-2">
+                {t('priceRange')}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 p-4">
+              <Slider
+                value={priceRange}
+                onValueChange={(value) => onPriceRangeChange(value as [number, number])}
+                max={maxPrice}
+                step={1000}
+                className="mb-2"
+              />
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{formatPrice(priceRange[0])} RWF</span>
+                <span>{formatPrice(priceRange[1])} RWF</span>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Sort Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                {t('sortBy')}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {sortOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => onSortChange(option.value)}
+                  className={cn(sortBy === option.value && 'bg-primary/10')}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );
