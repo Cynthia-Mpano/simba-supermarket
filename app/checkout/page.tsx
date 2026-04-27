@@ -13,6 +13,7 @@ import { useStore } from '@/lib/store-context';
 import { getTranslation } from '@/lib/translations';
 import { placeOrder } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { PaymentModal, airtelPaymentSimulator, momoPaymentSimulator } from '@/components/payment-modal';
 
 type PaymentMethod = 'momo' | 'airtel' | 'cash';
 
@@ -24,6 +25,9 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('momo');
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [paymentStep, setPaymentStep] = useState<'phone' | 'processing' | 'success' | 'failed'>('phone');
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -41,6 +45,13 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (paymentMethod === 'momo' || paymentMethod === 'airtel') {
+      setPaymentPhone(formData.phone);
+      setPaymentModalOpen(true);
+      return;
+    }
+    
     setIsSubmitting(true);
     setError(null);
 
@@ -53,7 +64,6 @@ export default function CheckoutPage() {
       clearCart();
       router.push(`/order-confirmation?id=${response.orderId}&method=${paymentMethod}`);
     } catch (err) {
-      // Backend offline — generate local order ID and proceed
       console.warn('Backend unavailable, using local order ID:', err);
       const orderId = `SIM-${Date.now().toString(36).toUpperCase().slice(-6)}`;
       clearCart();
@@ -61,6 +71,26 @@ export default function CheckoutPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePaymentConfirm = () => {
+    const simulator = paymentMethod === 'airtel' ? airtelPaymentSimulator : momoPaymentSimulator;
+    
+    simulator(
+      paymentPhone,
+      total,
+      () => {
+        setPaymentStep('success');
+        setTimeout(() => {
+          const orderId = `SIM-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+          clearCart();
+          router.push(`/order-confirmation?id=${orderId}&method=${paymentMethod}`);
+        }, 1500);
+      },
+      () => {
+        setPaymentStep('failed');
+      }
+    );
   };
 
   if (cart.length === 0) {
@@ -264,6 +294,17 @@ export default function CheckoutPage() {
           </div>
         </form>
       </main>
+
+      <PaymentModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        paymentMethod={paymentMethod}
+        amount={total}
+        phone={paymentPhone}
+        onPhoneChange={setPaymentPhone}
+        onConfirm={handlePaymentConfirm}
+        isProcessing={isSubmitting}
+      />
     </div>
   );
 }

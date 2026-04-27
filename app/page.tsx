@@ -1,18 +1,19 @@
 'use client';
 
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { Header } from '@/components/header';
 import { Hero } from '@/components/hero';
 import { ProductCard } from '@/components/product-card';
 import { CategoryFilter } from '@/components/category-filter';
 import { Footer } from '@/components/footer';
+import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store-context';
 import { getTranslation } from '@/lib/translations';
 import productData from '@/data/products.json';
 import type { Product } from '@/lib/types';
-import { useState } from 'react';
 
 const products = productData.products as Product[];
+const ITEMS_PER_PAGE = 50;
 
 export default function HomePage() {
   const { locale, searchQuery } = useStore();
@@ -21,6 +22,7 @@ export default function HomePage() {
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('default');
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   
   const maxPrice = useMemo(() => Math.max(...products.map(p => p.price)), []);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrice]);
@@ -80,6 +82,18 @@ export default function HomePage() {
     return result;
   }, [searchQuery, selectedCategory, sortBy, priceRange]);
 
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [searchQuery, selectedCategory, sortBy, priceRange]);
+
+  const displayedProducts = filteredProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredProducts.length;
+
+  const loadMore = () => {
+    setVisibleCount(prev => prev + ITEMS_PER_PAGE);
+  };
+
   const scrollToProducts = () => {
     productsRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -108,11 +122,25 @@ export default function HomePage() {
           />
 
           {filteredProducts.length > 0 ? (
-            <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {displayedProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="mt-8 text-center">
+                  <Button 
+                    onClick={loadMore} 
+                    variant="outline" 
+                    size="lg"
+                    className="min-w-[200px]"
+                  >
+                    {t('seeMore')} ({filteredProducts.length - visibleCount} {t('moreProducts')})
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="mt-12 text-center py-12">
               <p className="text-lg text-muted-foreground">{t('noProducts')}</p>

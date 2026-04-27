@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   description: 'Shop fresh groceries, household essentials, and more. Fast delivery in Kigali, Rwanda. MoMo payments accepted.',
   keywords: ['supermarket', 'groceries', 'Rwanda', 'Kigali', 'online shopping', 'delivery', 'MoMo'],
   authors: [{ name: 'Simba Supermarket' }],
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-icon.png',
+  },
   openGraph: {
     title: "Simba Supermarket - Rwanda's #1 Online Supermarket",
     description: 'Shop fresh groceries, household essentials, and more. Fast delivery in Kigali.',

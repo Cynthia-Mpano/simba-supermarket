@@ -35,6 +35,8 @@ export const translations = {
     clearFilters: 'Clear Filters',
     showingProducts: 'Showing {count} products',
     viewDetails: 'View Details',
+    seeMore: 'See More',
+    moreProducts: 'more products',
     
     // Cart
     yourCart: 'Your Cart',
@@ -216,6 +218,8 @@ export const translations = {
     clearFilters: 'Effacer les Filtres',
     showingProducts: '{count} produits affichés',
     viewDetails: 'Voir les Détails',
+    seeMore: 'Voir Plus',
+    moreProducts: 'produits restants',
     
     // Cart
     yourCart: 'Votre Panier',
@@ -397,6 +401,8 @@ export const translations = {
     clearFilters: 'Siba Ibishungura',
     showingProducts: '{count} ibicuruzwa',
     viewDetails: 'Reba Byinshi',
+    seeMore: 'Reba Byinshi',
+    moreProducts: 'birakwiriye',
     
     // Cart
     yourCart: 'Agasanduku Kawe',
