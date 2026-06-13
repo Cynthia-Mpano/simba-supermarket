@@ -1,0 +1,11 @@
+{
+  "name": "simba-supermarket",
+  "version": "1.0.0",
+  "description": "Simba Supermarket E-Commerce App",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y http-server -p 8080"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

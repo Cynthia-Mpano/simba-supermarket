@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simba Supermarket - Rwanda's Premium Online Shop</title>
+  <link rel="icon" type="image/avif" href="simba logo.avif">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="nav-container">
+      <!-- Logo branding -->
+      <a href="#" class="logo-container" onclick="navigate('home'); return false;">
+        <img src="simba logo.avif" alt="Simba Logo" class="logo-img">
+        <span>Simba</span>
+      </a>
+
+      <!-- Category Dropdown Button -->
+      <div class="category-dropdown-container">
+        <button class="nav-btn" id="category-dropdown-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px; height:16px; display:inline-block; vertical-align:middle; margin-right:4px;"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <span data-i18n="shop_by_category">Shop By Category</span> ▾
+        </button>
+        <div class="category-dropdown-menu" id="category-dropdown-menu">
+          <!-- Rendered dynamically in app.js -->
+        </div>
+      </div>
+
+      <!-- Search bar (center) -->
+      <div class="search-container">
+        <input type="text" id="search-input" class="search-input" data-i18n-placeholder="search_placeholder" placeholder="Search products or categories...">
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <!-- Controls (Dropdowns & Theme toggle) -->
+      <div style="display:flex; align-items:center; gap:8px;">
+        <!-- Language Selector -->
+        <div class="nav-select-wrapper">
+          <select id="lang-select" class="nav-select" title="Select Language">
+            <option value="en">EN</option>
+            <option value="rw">RW</option>
+            <option value="fr">FR</option>
+          </select>
+        </div>
+
+        <!-- Branch Dropdown -->
+        <div class="nav-select-wrapper">
+          <select id="branch-select" class="nav-select" title="Select Store Branch">
+            <option value="All Branches" data-i18n="all_branches">All Branches</option>
+            <option value="HQ Centenary">HQ Centenary</option>
+            <option value="Gishushu">Gishushu</option>
+            <option value="Kimironko">Kimironko</option>
+            <option value="Kicukiro">Kicukiro</option>
+            <option value="Kigali Heights">Kigali Heights</option>
+            <option value="UTC">UTC</option>
+            <option value="Gacuriro">Gacuriro</option>
+            <option value="Gikondo">Gikondo</option>
+            <option value="Sonatube">Sonatube</option>
+            <option value="Kisimenti">Kisimenti</option>
+            <option value="Rebero">Rebero</option>
+          </select>
+        </div>
+
+        <!-- Dark/Light Theme switch button -->
+        <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Nav Actions (Links list) -->
+      <div class="nav-actions">
+        <div class="nav-links">
+          <!-- Home: Hidden when already on the homepage, but keep visible elsewhere -->
+          <a href="#" id="nav-home-btn" class="nav-btn home-btn-nav hidden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span data-i18n="nav_home">Home</span>
+          </a>
+
+          <!-- About Page link -->
+          <a href="#" id="nav-about-btn" class="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span data-i18n="nav_about">About</span>
+          </a>
+
+          <!-- Contact Page link -->
+          <a href="#" id="nav-contact-btn" class="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <span data-i18n="nav_contact">Contact</span>
+          </a>
+
+          <!-- Dashboard: visible in nav always, gate inside dashboard page -->
+          <a href="#" id="nav-dashboard-btn" class="nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="9"></rect>
+              <rect x="14" y="3" width="7" height="5"></rect>
+              <rect x="14" y="12" width="7" height="9"></rect>
+              <rect x="3" y="16" width="7" height="5"></rect>
+            </svg>
+            <span data-i18n="nav_dashboard">Dashboard</span>
+          </a>
+        </div>
+
+        <!-- Cart Button -->
+        <a href="#" id="nav-cart-btn" class="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span data-i18n="nav_cart">Cart</span>
+          <span id="cart-badge" class="badge" style="display: none;">0</span>
+        </a>
+
+        <!-- Sign In Button -->
+        <a href="#" id="nav-account-btn" class="nav-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span data-i18n="nav_signin">Sign In</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Content Area -->
+  <main style="padding: 12px; max-width: 1400px; margin: 0 auto; min-height: 80vh;">
+
+    <!-- 1. HOMEPAGE VIEW -->
+    <div id="view-home" class="app-view active">
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <h1 class="hero-title" data-i18n="hero_title">Rwanda's Online Supermarket</h1>
+        <p class="hero-subtitle" data-i18n="hero_subtitle">Get fresh groceries and household essentials delivered right to your doorstep from your nearest Simba branch.</p>
+      </div>
+
+      <!-- Aisle atmosphere strip -->
+      <div class="aisle-strip" aria-label="Supermarket atmosphere images">
+        <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=75&auto=format&fit=crop" alt="Fresh produce aisle" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=400&q=75&auto=format&fit=crop" alt="Dairy aisle" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=75&auto=format&fit=crop" alt="Bakery section" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=400&q=75&auto=format&fit=crop" alt="Grocery shelves" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=400&q=75&auto=format&fit=crop" alt="Beverage aisle" loading="lazy">
+      </div>
+
+      <!-- Food category quick tiles -->
+      <div class="food-tile-row" aria-label="Food category highlights">
+        <div class="food-tile" onclick="selectFoodCategory('Food Products')">
+          <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=200&q=70&auto=format&fit=crop" alt="Sauces & Condiments" loading="lazy">
+          <div class="food-tile-label">Condiments</div>
+        </div>
+        <div class="food-tile" onclick="selectFoodCategory('General')">
+          <img src="https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?w=200&q=70&auto=format&fit=crop" alt="Grains & Rice" loading="lazy">
+          <div class="food-tile-label">Grains</div>
+        </div>
+        <div class="food-tile" onclick="selectFoodCategory('Alcoholic Drinks')">
+          <img src="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=200&q=70&auto=format&fit=crop" alt="Cooking Oils" loading="lazy">
+          <div class="food-tile-label">Oils</div>
+        </div>
+        <div class="food-tile" onclick="selectFoodCategory('Baby Products')">
+          <img src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=200&q=70&auto=format&fit=crop" alt="Baby Products" loading="lazy">
+          <div class="food-tile-label">Baby</div>
+        </div>
+        <div class="food-tile" onclick="selectFoodCategory('Cosmetics & Personal Care')">
+          <img src="https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=200&q=70&auto=format&fit=crop" alt="Personal Care" loading="lazy">
+          <div class="food-tile-label">Personal Care</div>
+        </div>
+        <div class="food-tile" onclick="selectFoodCategory('Kitchenware & Electronics')">
+          <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&q=70&auto=format&fit=crop" alt="Kitchenware" loading="lazy">
+          <div class="food-tile-label">Kitchen</div>
+        </div>
+        <div class="food-tile" onclick="selectFoodCategory('Sports & Wellness')">
+          <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=200&q=70&auto=format&fit=crop" alt="Sports & Wellness" loading="lazy">
+          <div class="food-tile-label">Sports</div>
+        </div>
+        <div class="food-tile" onclick="selectFoodCategory('All')">
+          <img src="https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?w=200&q=70&auto=format&fit=crop" alt="All Products" loading="lazy">
+          <div class="food-tile-label">All Items</div>
+        </div>
+      </div>
+
+      <!-- Categories chips bar -->
+      <div class="filter-bar">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-weight:600; font-size:13px; color:var(--text-medium);" data-i18n="dash_status">Category:</span>
+          <span id="active-category-indicator" style="font-weight:700; font-size:13px; color:var(--primary-color);">All</span>
+        </div>
+        <span class="product-count" id="product-count" data-i18n="loading_products">Loading products...</span>
+      </div>
+
+      <!-- Products Grid -->
+      <section class="products-grid-container">
+        <div id="products-grid" class="products-grid">
+          <!-- Rendered dynamically -->
+        </div>
+        <div id="load-more-container" class="load-more-container">
+          <!-- Load More pagination button -->
+        </div>
+      </section>
+
+      <!-- Mid-page aisle banner -->
+      <div class="aisle-banner">
+        <img src="https://images.unsplash.com/photo-1601599561213-832382fd07ba?w=1200&q=75&auto=format&fit=crop" alt="Supermarket fresh aisle">
+        <div class="aisle-banner-overlay">
+          <h3>Fresh. Local. Delivered.</h3>
+          <p>Quality groceries from Rwanda's most trusted supermarket chain — straight to your door.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. ABOUT PAGE VIEW -->
+    <div id="view-about" class="app-view">
+      <!-- About aisle banner -->
+      <div class="aisle-strip" style="margin-bottom:20px;" aria-label="Simba store images">
+        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=75&auto=format&fit=crop" alt="Store checkout" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=75&auto=format&fit=crop" alt="Bakery" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&q=75&auto=format&fit=crop" alt="Food display" loading="lazy">
+      </div>
+      <section>
+        <h2 style="font-weight:800; font-size:28px; border-bottom:1.5px solid var(--border-color); padding-bottom:12px;" data-i18n="about_title">About Simba Supermarket</h2>
+        
+        <div class="static-page-grid" style="margin-top:20px;">
+          <!-- Profile Column -->
+          <div>
+            <h3 style="font-weight:700; font-size:18px; margin-bottom:8px; color:var(--primary-color);" data-i18n="about_company_profile">Company Profile</h3>
+            <p style="color:var(--text-medium); margin-bottom:20px; font-size:14px; line-height:1.6;" data-i18n="about_company_profile_text">
+              Simba Supermarket is Rwanda's largest and most trusted retail chain, serving thousands of customers daily with fresh produce, groceries, and household goods.
+            </p>
+            
+            <h3 style="font-weight:700; font-size:18px; margin-bottom:8px; color:var(--primary-color);" data-i18n="about_beliefs_values">Beliefs & Values</h3>
+            <p style="color:var(--text-medium); font-size:14px; line-height:1.6;" data-i18n="about_beliefs_values_text">
+              We believe in quality, affordability, customer satisfaction, and community support.
+            </p>
+          </div>
+          
+          <!-- History Column -->
+          <div>
+            <h3 style="font-weight:700; font-size:18px; margin-bottom:8px; color:var(--primary-color);" data-i18n="about_origin_history">Origin & History</h3>
+            <p style="color:var(--text-medium); margin-bottom:20px; font-size:14px; line-height:1.6;" data-i18n="about_origin_history_text">
+              Established in Kiyovu, Kigali, Simba started as a family business and has grown over decades into a premier retail hub across Rwanda.
+            </p>
+            
+            <h3 style="font-weight:700; font-size:18px; margin-bottom:8px; color:var(--primary-color);" data-i18n="about_services">Our Services</h3>
+            <div class="about-services-grid">
+              <div class="about-service-card">Supermarket</div>
+              <div class="about-service-card">Coffee Shop & Restaurant</div>
+              <div class="about-service-card">Arcade</div>
+              <div class="about-service-card">Online Sales</div>
+              <div class="about-service-card">Bakery Factory</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 3. CONTACT PAGE VIEW -->
+    <div id="view-contact" class="app-view">
+      <section>
+        <h2 style="font-weight:800; font-size:28px; border-bottom:1.5px solid var(--border-color); padding-bottom:12px;" data-i18n="contact_title">Contact Us</h2>
+        
+        <div class="static-page-grid" style="margin-top:20px;">
+          <!-- Left Column Contact Details -->
+          <div>
+            <div style="background-color:var(--bg-main); border:1px solid var(--border-color); padding:20px; border-radius:var(--radius-sm); margin-bottom:20px;">
+              <h3 style="font-size:16px; font-weight:700; margin-bottom:12px;" data-i18n="contact_hq">Headquarters Address</h3>
+              <p style="font-size:14px; line-height:1.6; color:var(--text-medium);" data-i18n="contact_address">
+                P.O. Box 190, KN 34 Street, Kiyovu, Kigali, Nyarugenge District, U.T.C Building, 5th Floor
+              </p>
+            </div>
+            
+            <div style="background-color:var(--bg-main); border:1px solid var(--border-color); padding:20px; border-radius:var(--radius-sm);">
+              <div style="margin-bottom:12px;">
+                <strong style="font-size:13px; text-transform:uppercase; color:var(--primary-color);" data-i18n="contact_phone">Phone</strong>
+                <p style="font-size:15px; font-weight:700;">+250 788307200</p>
+              </div>
+              <div>
+                <strong style="font-size:13px; text-transform:uppercase; color:var(--primary-color);" data-i18n="contact_email">Email</strong>
+                <p style="font-size:15px; font-weight:700;">info@Simbasupermarket.rw</p>
+              </div>
+            </div>
+
+            <!-- Ways to contact us -->
+            <div class="contact-ways-grid">
+              <div class="contact-way-card">
+                <span class="contact-way-icon">📞</span>
+                <div class="contact-way-title">Call Us</div>
+                <div class="contact-way-detail">+250 788 307 200<br>Mon–Sat 7am–9pm</div>
+              </div>
+              <div class="contact-way-card">
+                <span class="contact-way-icon">📧</span>
+                <div class="contact-way-title">Email</div>
+                <div class="contact-way-detail">info@Simbasupermarket.rw<br>Reply within 24 hours</div>
+              </div>
+              <div class="contact-way-card">
+                <span class="contact-way-icon">💬</span>
+                <div class="contact-way-title">WhatsApp</div>
+                <div class="contact-way-detail">+250 788 307 200<br>Chat with us live</div>
+              </div>
+              <div class="contact-way-card">
+                <span class="contact-way-icon">📍</span>
+                <div class="contact-way-title">Visit Us</div>
+                <div class="contact-way-detail">UTC Building, 5th Floor<br>Kiyovu, Kigali</div>
+              </div>
+              <div class="contact-way-card">
+                <span class="contact-way-icon">🐦</span>
+                <div class="contact-way-title">Twitter / X</div>
+                <div class="contact-way-detail">@SimbaMarketRW<br>Follow for updates</div>
+              </div>
+              <div class="contact-way-card">
+                <span class="contact-way-icon">📘</span>
+                <div class="contact-way-title">Facebook</div>
+                <div class="contact-way-detail">Simba Supermarket RW<br>Like & message us</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column 11 Branches List -->
+          <div>
+            <h3 style="font-weight:700; font-size:16px; margin-bottom:12px; text-transform:uppercase; color:var(--text-medium);" data-i18n="contact_locations">Simba Branches & Locations</h3>
+            <div class="locations-grid" id="contact-branches-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback Form - full width below the two columns -->
+        <div class="feedback-form-card" id="feedback-section">
+          <h3>💬 Share Your Feedback</h3>
+          <p>We value your opinion! Tell us about your experience with Simba Supermarket.</p>
+
+          <form id="feedback-form" onsubmit="handleFeedbackSubmit(event)">
+            <div class="static-page-grid" style="margin-bottom:0;">
+              <div class="form-group">
+                <label for="feedback-name">Your Name</label>
+                <input type="text" id="feedback-name" class="form-input" placeholder="e.g. Kezia Rugwiro" required>
+              </div>
+              <div class="form-group">
+                <label for="feedback-email">Your Email</label>
+                <input type="email" id="feedback-email" class="form-input" placeholder="e.g. kezia@email.com" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Type of Feedback</label>
+              <div class="feedback-type-row" id="feedback-type-row">
+                <span class="feedback-type-chip active" data-type="General">General</span>
+                <span class="feedback-type-chip" data-type="Product Quality">Product Quality</span>
+                <span class="feedback-type-chip" data-type="Delivery">Delivery</span>
+                <span class="feedback-type-chip" data-type="Customer Service">Customer Service</span>
+                <span class="feedback-type-chip" data-type="App / Website">App / Website</span>
+                <span class="feedback-type-chip" data-type="Pricing">Pricing</span>
+              </div>
+              <input type="hidden" id="feedback-type-value" value="General">
+            </div>
+
+            <div class="form-group">
+              <label>Rating</label>
+              <div class="feedback-rating" id="feedback-rating" role="group" aria-label="Star rating">
+                <span class="rating-star" data-val="1" role="button" aria-label="1 star" tabindex="0">★</span>
+                <span class="rating-star" data-val="2" role="button" aria-label="2 stars" tabindex="0">★</span>
+                <span class="rating-star" data-val="3" role="button" aria-label="3 stars" tabindex="0">★</span>
+                <span class="rating-star" data-val="4" role="button" aria-label="4 stars" tabindex="0">★</span>
+                <span class="rating-star" data-val="5" role="button" aria-label="5 stars" tabindex="0">★</span>
+              </div>
+              <input type="hidden" id="feedback-rating-value" value="0">
+            </div>
+
+            <div class="form-group">
+              <label for="feedback-branch">Branch Visited (optional)</label>
+              <select id="feedback-branch" class="form-input">
+                <option value="">-- Select Branch --</option>
+                <option>HQ Centenary</option>
+                <option>Gishushu</option>
+                <option>Kimironko</option>
+                <option>Kicukiro</option>
+                <option>Kigali Heights</option>
+                <option>UTC</option>
+                <option>Gacuriro</option>
+                <option>Gikondo</option>
+                <option>Sonatube</option>
+                <option>Kisimenti</option>
+                <option>Rebero</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="feedback-message">Your Message</label>
+              <textarea id="feedback-message" class="form-input" rows="4" placeholder="Tell us what you think — compliments, complaints, or suggestions..." required style="resize:vertical; min-height:100px;"></textarea>
+            </div>
+
+            <div id="feedback-result" class="form-feedback"></div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">
+              Send Feedback 🚀
+            </button>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <!-- 4. REPRESENTATIVE DASHBOARD VIEW -->
+    <div id="view-dashboard" class="app-view">
+
+      <!-- Dashboard Login Gate (shown when not logged in as rep) -->
+      <div id="dashboard-login-gate" style="display:none;">
+        <div class="dashboard-login-gate">
+          <span class="gate-icon">🔐</span>
+          <h2>MarketRep Access</h2>
+          <p>This dashboard is restricted to authorized Simba Market Representatives. Please sign in with your rep credentials to continue.</p>
+
+          <form id="gate-login-form">
+            <div class="form-group">
+              <label for="gate-email">Email Address</label>
+              <input type="email" id="gate-email" class="form-input" placeholder="rep@simba.rw" required>
+            </div>
+            <div class="form-group">
+              <label for="gate-password">Password</label>
+              <input type="password" id="gate-password" class="form-input" placeholder="Enter password" required>
+            </div>
+            <div id="gate-feedback" class="form-feedback"></div>
+            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:12px;">
+              Sign In to Dashboard
+            </button>
+          </form>
+
+          <div class="gate-credentials-hint">
+            🔑 Demo credentials: <strong>rep@simba.rw</strong> / <strong>simba@rep2026</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Content (shown after login) -->
+      <section id="dashboard-content" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border-color); padding-bottom:12px; margin-bottom:20px;">
+          <h2 style="font-weight:800; font-size:28px;" data-i18n="dash_title">MarketRep Dashboard</h2>
+          <span style="font-weight:600; font-size:12px; padding:6px 12px; background-color:var(--primary-light); color:var(--primary-color); border-radius:20px;">MARKET REPRESENTATIVE</span>
+        </div>
+        
+        <!-- Dashboard Navigation Sub-tabs -->
+        <div class="dashboard-tabs">
+          <div id="dash-tab-orders" class="dashboard-tab active" data-i18n="dash_orders">Orders Manager</div>
+          <div id="dash-tab-inventory" class="dashboard-tab" data-i18n="dash_products">Branch Inventory</div>
+          <div id="dash-tab-analytics" class="dashboard-tab" data-i18n="dash_analytics">Analytics Summary</div>
+        </div>
+        
+        <!-- Tab 1: Orders Panel -->
+        <div id="dash-panel-orders" class="dashboard-panel active">
+          <div class="table-container" id="dash-orders-table-container">
+            <!-- Table rendered dynamically -->
+          </div>
+        </div>
+        
+        <!-- Tab 2: Inventory Panel -->
+        <div id="dash-panel-inventory" class="dashboard-panel">
+          <div id="dash-inventory-container">
+            <!-- Switches list rendered dynamically -->
+          </div>
+        </div>
+        
+        <!-- Tab 3: Analytics Panel -->
+        <div id="dash-panel-analytics" class="dashboard-panel">
+          <div id="dash-analytics-container">
+            <!-- Visual bars and counts rendered dynamically -->
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 5. CART VIEW -->
+    <div id="view-cart" class="app-view">
+      <section style="background-color: transparent; box-shadow: none; padding: 0; margin-bottom: 24px; border:none;">
+        <h2 style="font-weight: 800; font-size: 28px; margin-bottom: 8px;" data-i18n="cart_title">Shopping Cart</h2>
+      </section>
+      
+      <div class="cart-layout" id="cart-layout-grid">
+        <div class="cart-items-list" id="cart-items-list">
+          <!-- Dynamic items list -->
+        </div>
+        <div id="cart-summary-container">
+          <!-- Dynamic total card -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. AUTHENTICATION VIEW -->
+    <div id="view-auth" class="app-view">
+      <section class="auth-container section-card">
+        <div class="auth-tabs">
+          <div id="tab-login" class="auth-tab active" data-i18n="login_title">Log In</div>
+          <div id="tab-register" class="auth-tab" data-i18n="register_title">Register Account</div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active">
+          <div class="form-group">
+            <label for="login-email" data-i18n="email_address">Email Address</label>
+            <input type="email" id="login-email" class="form-input" placeholder="e.g. rep@simba.rw" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password" data-i18n="label_password">Password</label>
+            <input type="password" id="login-password" class="form-input" placeholder="Enter password" required>
+          </div>
+          <div id="login-feedback" class="form-feedback"></div>
+          
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;" data-i18n="login_btn">
+            Sign In
+          </button>
+
+          <div class="auth-divider">or</div>
+
+          <button type="button" id="btn-google-login" class="btn btn-google">
+            <svg viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.62-.07-1.19-.35-1.69-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span data-i18n="google_login">Continue with Google</span>
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="auth-form">
+          <div class="form-group">
+            <label for="register-name" data-i18n="label_name">Full Name</label>
+            <input type="text" id="register-name" class="form-input" placeholder="e.g. Kezia" required>
+          </div>
+          <div class="form-group">
+            <label for="register-email" data-i18n="email_address">Email Address</label>
+            <input type="email" id="register-email" class="form-input" placeholder="e.g. user@simba.rw" required>
+          </div>
+          <div class="form-group">
+            <label for="register-password" data-i18n="label_password_confirm">Password (min 6 chars)</label>
+            <input type="password" id="register-password" class="form-input" placeholder="Create password" required>
+          </div>
+          <div id="register-feedback" class="form-feedback"></div>
+          
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;" data-i18n="register_btn">
+            Create Account
+          </button>
+
+          <div class="auth-divider">or</div>
+
+          <button type="button" id="btn-google-register" class="btn btn-google">
+            <svg viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.62-.07-1.19-.35-1.69-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span data-i18n="google_register">Sign up with Google</span>
+          </button>
+        </form>
+      </section>
+    </div>
+
+    <!-- 7. CHECKOUT VIEW -->
+    <div id="view-checkout" class="app-view">
+      <section style="background-color: transparent; box-shadow: none; padding: 0; margin-bottom: 24px; border:none;">
+        <h2 style="font-weight: 800; font-size: 28px; margin-bottom: 8px;" data-i18n="checkout_title">Order Details</h2>
+        <p style="color: var(--text-medium); font-size: 14px;" data-i18n="checkout_subtitle">Fill out your details to finalize your purchase.</p>
+      </section>
+
+      <div class="checkout-layout">
+        <!-- Billing Details Form -->
+        <section style="margin: 0;">
+          <h3 style="margin-bottom: 20px; font-weight: 700;" data-i18n="billing_shipping">Billing & Shipping Details</h3>
+          <form id="checkout-form">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+              <div class="form-group" style="margin:0;">
+                <label for="checkout-name" data-i18n="recipient_name">Recipient Name</label>
+                <input type="text" id="checkout-name" class="form-input" required>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="checkout-email" data-i18n="email_address">Email Address</label>
+                <input type="email" id="checkout-email" class="form-input" required>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="checkout-phone" data-i18n="phone_contact">Phone Contact (MOMO Number)</label>
+              <input type="tel" id="checkout-phone" class="form-input" placeholder="e.g. +250 788 123 456" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="checkout-address" data-i18n="delivery_address">Delivery Address / Pickup Instructions</label>
+              <input type="text" id="checkout-address" class="form-input" placeholder="e.g. KN 78 St, Kiyovu" required>
+            </div>
+
+            <!-- Payment Method Selector -->
+            <div class="form-group" style="margin-top:24px;">
+              <label style="font-size:13px; font-weight:700; margin-bottom:12px;" data-i18n="payment_method">Payment Method</label>
+              <input type="hidden" id="selected-payment-method" value="momo">
+              
+              <div class="payment-options">
+                <div class="payment-option-card active" data-method="momo">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                  <span>MTN MOMO</span>
+                </div>
+                <div class="payment-option-card" data-method="card">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                  <span>Credit/Debit Card</span>
+                </div>
+                <div class="payment-option-card" data-method="cod">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                  <span>Cash on Delivery</span>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 24px;" data-i18n="btn_place_order">
+              Place Order & Pay
+            </button>
+          </form>
+        </section>
+
+        <!-- Summary column -->
+        <div id="checkout-summary">
+          <!-- Dynamic totals details container -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. CONFIRMATION VIEW -->
+    <div id="view-confirmation" class="app-view">
+      <!-- Generated dynamically in app.js -->
+    </div>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer style="background-color: var(--bg-nav); color: var(--text-light); padding: 24px; margin-top: 60px; text-align: center; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.05);">
+    <div style="max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; align-items: center;">
+      <div style="display:flex; gap:16px; align-items:center;">
+        <img src="simba logo.avif" alt="Simba Logo Footer" style="height:32px; width:32px; border-radius:50%; background:#fff; border:1px solid var(--primary-color);">
+        <span style="color:#ffffff; font-weight:700; font-size:16px;">Simba Supermarket</span>
+      </div>
+      <p>Rwanda's Premier Online Grocery and Retail Shop. Kiyovu, Kigali, Rwanda.</p>
+      <p style="opacity: 0.6;">&copy; 2026 Simba Supermarket. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Product Details Modal Overlay -->
+  <div id="product-detail-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeProductModal()">&times;</button>
+      <div id="modal-body">
+        <!-- Loaded dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toasts Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Global Loading Indicator -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
