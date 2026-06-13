@@ -141,6 +141,8 @@ async function init() {
   } finally {
     showGlobalLoading(false);
   }
+  
+  initGoogleSignIn();
 }
 
 // Load Translation JSON files
@@ -360,6 +362,12 @@ function setupEventListeners() {
   const gateForm = document.getElementById('gate-login-form');
   if (gateForm) {
     gateForm.addEventListener('submit', handleGateLoginSubmit);
+  }
+
+  // Mobile hamburger menu toggle
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
   }
 
   // Feedback form type chips
@@ -989,19 +997,39 @@ function handleRegisterSubmit(e) {
 }
 
 // Google Login Integration
-function handleGoogleLogin() {
-  showGlobalLoading(true);
-  
-  setTimeout(() => {
+// Real Google Sign-In using Google Identity Services (GSI)
+// Replace GOOGLE_CLIENT_ID with your actual Google OAuth 2.0 Client ID
+// Get one at: https://console.cloud.google.com/
+const GOOGLE_CLIENT_ID = '364652717993-t4o3m7fptcjd04s1q9b0l6h1k2mnv8pu.apps.googleusercontent.com';
+
+function initGoogleSignIn() {
+  if (typeof google === 'undefined' || !google.accounts) return;
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredentialResponse,
+    auto_select: false,
+    cancel_on_tap_outside: true
+  });
+}
+
+function handleGoogleCredentialResponse(response) {
+  try {
+    // Decode the JWT credential (base64 decode the payload)
+    const base64Url = response.credential.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    
     const googleUser = {
-      email: 'john.rwanda@gmail.com',
-      name: 'John Simba Google',
-      role: 'customer'
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+      role: 'customer',
+      googleId: payload.sub
     };
     
     loginUser(googleUser);
     showGlobalLoading(false);
-    showToast('Signed in via Google successfully!', 'success');
+    showToast(`Welcome, ${googleUser.name}! Signed in with Google.`, 'success');
     
     if (localStorage.getItem('simba_redirect_checkout') === 'true') {
       localStorage.removeItem('simba_redirect_checkout');
@@ -1009,7 +1037,47 @@ function handleGoogleLogin() {
     } else {
       navigate('home');
     }
-  }, 1200);
+  } catch (err) {
+    showGlobalLoading(false);
+    showToast('Google sign-in failed. Please try again.', 'error');
+  }
+}
+
+function handleGoogleLogin() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    showToast('Google Sign-In is not available. Check your internet connection.', 'error');
+    return;
+  }
+  showGlobalLoading(true);
+  google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      // Fallback: render button popup manually
+      showGlobalLoading(false);
+      // Create a temporary container for the Google button
+      const tempDiv = document.createElement('div');
+      tempDiv.id = 'google-btn-temp';
+      tempDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#fff;padding:24px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+      tempDiv.innerHTML = '<p style="margin-bottom:12px;font-weight:600;font-size:14px;color:#2D1200;">Click below to sign in with Google</p>';
+      document.body.appendChild(tempDiv);
+      google.accounts.id.renderButton(tempDiv, {
+        type: 'standard',
+        shape: 'rectangular',
+        theme: 'outline',
+        text: 'signin_with',
+        size: 'large',
+        logo_alignment: 'left'
+      });
+      // Remove after 30s
+      setTimeout(() => { if (document.getElementById('google-btn-temp')) tempDiv.remove(); }, 30000);
+      // Close on outside click
+      setTimeout(() => {
+        const closeHandler = (e) => {
+          if (!tempDiv.contains(e.target)) { tempDiv.remove(); document.removeEventListener('click', closeHandler); }
+        };
+        document.addEventListener('click', closeHandler);
+      }, 100);
+    }
+  });
 }
 
 function loginUser(userData) {
@@ -1027,23 +1095,25 @@ function logoutUser() {
 }
 
 function updateAuthNavigation() {
+  const mobileAccountBtn = document.getElementById('mobile-account-btn');
+  
   if (state.user) {
     const initials = state.user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    el.accountNavBtn.innerHTML = `
-      <div style="width: 22px; height: 22px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px;">
-        ${initials}
-      </div>
-      <span data-i18n="nav_logout">${state.translations.nav_logout || 'Log Out'}</span>
-    `;
+    const avatarHtml = state.user.picture
+      ? `<img src="${state.user.picture}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:2px solid var(--primary-color);" alt="Profile" referrerpolicy="no-referrer">`
+      : `<div style="width:22px;height:22px;border-radius:50%;background-color:var(--primary-color);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;">${initials}</div>`;
     
-    // Toggle navigation visibility of Dashboard - always show in nav, gate is inside dashboard page
+    el.accountNavBtn.innerHTML = `${avatarHtml}<span data-i18n="nav_logout">${state.translations.nav_logout || 'Log Out'}</span>`;
     el.dashboardNavBtn.style.display = 'flex';
+    
+    if (mobileAccountBtn) mobileAccountBtn.textContent = `👤 ${state.user.name.split(' ')[0]} (Log Out)`;
   } else {
     el.accountNavBtn.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       <span data-i18n="nav_signin">${state.translations.nav_signin || 'Sign In'}</span>
     `;
     el.dashboardNavBtn.style.display = 'flex';
+    if (mobileAccountBtn) mobileAccountBtn.textContent = '👤 Sign In';
   }
 }
 
@@ -1743,6 +1813,48 @@ function handleHashRoute() {
   const page = getRouteFromUrl();
   navigate(page);
 }
+
+// Mobile menu toggle
+function toggleMobileMenu() {
+  const drawer = document.getElementById('mobile-nav-drawer');
+  const btn = document.getElementById('mobile-menu-btn');
+  const hamburger = btn.querySelector('.hamburger-icon');
+  const close = btn.querySelector('.close-icon');
+  const isOpen = drawer.classList.contains('open');
+  
+  if (isOpen) {
+    drawer.classList.remove('open');
+    hamburger.style.display = 'block';
+    close.style.display = 'none';
+  } else {
+    drawer.classList.add('open');
+    hamburger.style.display = 'none';
+    close.style.display = 'block';
+  }
+}
+window.toggleMobileMenu = toggleMobileMenu;
+
+function closeMobileMenu() {
+  const drawer = document.getElementById('mobile-nav-drawer');
+  const btn = document.getElementById('mobile-menu-btn');
+  if (!drawer || !btn) return;
+  drawer.classList.remove('open');
+  const hamburger = btn.querySelector('.hamburger-icon');
+  const close = btn.querySelector('.close-icon');
+  if (hamburger) hamburger.style.display = 'block';
+  if (close) close.style.display = 'none';
+}
+window.closeMobileMenu = closeMobileMenu;
+
+function handleMobileAccountClick() {
+  closeMobileMenu();
+  if (state.user) {
+    if (confirm('Are you sure you want to log out?')) logoutUser();
+  } else {
+    navigate('auth');
+  }
+}
+window.handleMobileAccountClick = handleMobileAccountClick;
 
 // Listen for browser back/forward
 window.addEventListener('popstate', handleHashRoute);
