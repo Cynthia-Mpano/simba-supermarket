@@ -2,20 +2,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
+  /* === LIGHT MODE (default) — orange & white palette === */
   --primary-color: #FD882A;
   --primary-hover: #E0721B;
   --primary-light: #FFF0E4;
-  --text-dark: #0F172A;
-  --text-medium: #475569;
-  --text-light: #94A3B8;
-  --bg-main: #F8FAFC;
-  --bg-card: #FFFFFF;
-  --bg-nav: #0F172A;
-  --border-color: #E2E8F0;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
-  --shadow-hover: 0 20px 25px -5px rgba(253, 136, 42, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --text-dark: #2D1200;
+  --text-medium: #7c4a1e;
+  --text-light: #b07040;
+  --bg-main: #fff8f2;
+  --bg-card: #ffffff;
+  --bg-nav: #1a0900;
+  --border-color: #fdd9b5;
+  --shadow-sm: 0 1px 3px rgba(253,136,42,0.10);
+  --shadow-md: 0 4px 6px -1px rgba(253,136,42,0.12), 0 2px 4px -1px rgba(253,136,42,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(253,136,42,0.14), 0 4px 6px -2px rgba(253,136,42,0.06);
+  --shadow-hover: 0 20px 25px -5px rgba(253,136,42,0.22), 0 10px 10px -5px rgba(253,136,42,0.08);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
@@ -24,35 +25,20 @@
   --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Light Mode Theme Variables (explicit orange & white) */
-body:not(.dark-mode) {
-  --text-dark: #1a0a00;
-  --text-medium: #7c4a1e;
-  --text-light: #c47a3a;
-  --bg-main: #fff8f2;
-  --bg-card: #ffffff;
-  --bg-nav: #0F172A;
-  --border-color: #fdd9b5;
-  --primary-light: #fff0e0;
-  --shadow-sm: 0 1px 3px rgba(253,136,42,0.08);
-  --shadow-md: 0 4px 6px -1px rgba(253,136,42,0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(253,136,42,0.12);
-  --shadow-hover: 0 20px 25px -5px rgba(253, 136, 42, 0.18);
-}
-
-/* Dark Mode Theme Variables */
+/* === DARK MODE overrides === */
 body.dark-mode {
   --text-dark: #F8FAFC;
   --text-medium: #CBD5E1;
   --text-light: #64748b;
   --bg-main: #0F172A;
   --bg-card: #1E293B;
+  --bg-nav: #0F172A;
   --border-color: #334155;
   --primary-light: #3B281F;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.25);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.35);
-  --shadow-hover: 0 20px 25px -5px rgba(253, 136, 42, 0.15);
+  --shadow-hover: 0 20px 25px -5px rgba(253,136,42,0.15);
 }
 
 /* Reset & Global Styles */
@@ -381,11 +367,15 @@ body.dark-mode .theme-toggle-btn .sun-icon {
   padding: 32px 16px;
   margin: 12px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #FD882A 140%);
+  background: linear-gradient(135deg, #FD882A 0%, #E0721B 50%, #c45c0a 100%);
   color: #ffffff;
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-lg);
+}
+
+body.dark-mode .hero-banner {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #FD882A 140%);
 }
 
 .hero-banner::before {
@@ -536,13 +526,17 @@ body.dark-mode .theme-toggle-btn .sun-icon {
   position: absolute;
   top: 8px;
   left: 8px;
-  background-color: rgba(15, 23, 42, 0.85);
+  background-color: rgba(253, 136, 42, 0.92);
   backdrop-filter: blur(4px);
   color: #ffffff;
   padding: 4px 8px;
   font-size: 10px;
   font-weight: 600;
   border-radius: 4px;
+}
+
+body.dark-mode .product-card-badge {
+  background-color: rgba(15, 23, 42, 0.85);
 }
 
 .product-card-info {
@@ -1435,7 +1429,7 @@ input:checked + .switch-slider:before {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255,255,255,0.7);
+  background-color: rgba(255, 248, 242, 0.85);
   z-index: 999;
   display: flex;
   align-items: center;
@@ -1474,13 +1468,17 @@ body.dark-mode .loading-overlay {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: rgba(253, 136, 42, 0.18);
   backdrop-filter: blur(8px);
   z-index: 500;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+}
+
+body.dark-mode .modal-overlay {
+  background-color: rgba(15, 23, 42, 0.6);
 }
 
 .modal-content {
@@ -1582,8 +1580,12 @@ body.dark-mode .loading-overlay {
   left: 0;
   right: 0;
   padding: 16px 20px;
-  background: linear-gradient(to top, rgba(15,23,42,0.75) 0%, transparent 100%);
+  background: linear-gradient(to top, rgba(253,136,42,0.85) 0%, transparent 100%);
   color: #fff;
+}
+
+body.dark-mode .aisle-banner-overlay {
+  background: linear-gradient(to top, rgba(15,23,42,0.75) 0%, transparent 100%);
 }
 
 .aisle-banner-overlay h3 {
@@ -1640,7 +1642,7 @@ body.dark-mode .loading-overlay {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(15,23,42,0.65);
+  background: rgba(253,136,42,0.82);
   color: #fff;
   font-size: 9px;
   font-weight: 700;
@@ -1648,6 +1650,10 @@ body.dark-mode .loading-overlay {
   padding: 3px 2px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+body.dark-mode .food-tile-label {
+  background: rgba(15,23,42,0.65);
 }
 
 /* ============================================================
@@ -1910,58 +1916,4 @@ body.dark-mode .loading-overlay {
   border: 1px solid rgba(253,136,42,0.2);
 }
 
-/* Light mode section/card bg tint */
-body:not(.dark-mode) section,
-body:not(.dark-mode) .section-card {
-  background-color: #ffffff;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .product-card {
-  background-color: #ffffff;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .filter-bar {
-  background-color: #fff8f2;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .hero-banner {
-  background: linear-gradient(135deg, #FD882A 0%, #E0721B 40%, #fff0e0 140%);
-}
-
-body:not(.dark-mode) .location-item-card {
-  background-color: #fff8f2;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .cart-item {
-  background-color: #ffffff;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .cart-summary {
-  background-color: #fff8f2;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .dashboard-login-gate {
-  background-color: #ffffff;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .feedback-form-card {
-  background-color: #fff8f2;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .modal-content {
-  background-color: #ffffff;
-  border-color: #fdd9b5;
-}
-
-body:not(.dark-mode) .about-service-card {
-  background-color: #fff8f2;
-  border-color: #fdd9b5;
-}
+/* Light mode section/card bg — already handled by :root defaults above */
