@@ -340,10 +340,6 @@ function setupEventListeners() {
   el.loginForm.addEventListener('submit', handleLoginSubmit);
   el.registerForm.addEventListener('submit', handleRegisterSubmit);
   
-  // Google sign in simulation
-  document.getElementById('btn-google-login').addEventListener('click', handleGoogleLogin);
-  document.getElementById('btn-google-register').addEventListener('click', handleGoogleLogin);
-  
   // Checkout Form Submission
   document.getElementById('checkout-form').addEventListener('submit', handleCheckoutSubmit);
   
@@ -1072,88 +1068,74 @@ function handleRegisterSubmit(e) {
   }, 1200);
 }
 
-// Google Login Integration
-// Real Google Sign-In using Google Identity Services (GSI)
-// Replace GOOGLE_CLIENT_ID with your actual Google OAuth 2.0 Client ID
-// Get one at: https://console.cloud.google.com/
+// ── GOOGLE SIGN-IN (GSI) ─────────────────────────────────────
+// Uses Google Identity Services renderButton — the user clicks,
+// picks an account from the native Google account chooser, done.
 const GOOGLE_CLIENT_ID = '364652717993-t4o3m7fptcjd04s1q9b0l6h1k2mnv8pu.apps.googleusercontent.com';
 
 function initGoogleSignIn() {
-  if (typeof google === 'undefined' || !google.accounts) return;
+  if (typeof google === 'undefined' || !google.accounts) {
+    // GSI not loaded — show fallback message
+    const msg = document.getElementById('google-signin-unavailable');
+    if (msg) msg.style.display = 'block';
+    return;
+  }
+
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleGoogleCredentialResponse,
     auto_select: false,
-    cancel_on_tap_outside: true
+    cancel_on_tap_outside: true,
+    ux_mode: 'popup'   // Opens the account chooser as a popup
   });
+
+  // Render the official Google button in both login and register forms
+  const btnConfig = {
+    type: 'standard',
+    shape: 'rectangular',
+    theme: 'outline',
+    text: 'continue_with',
+    size: 'large',
+    logo_alignment: 'center',
+    width: 360
+  };
+
+  const loginContainer    = document.getElementById('google-signin-btn');
+  const registerContainer = document.getElementById('google-register-btn');
+  if (loginContainer)    google.accounts.id.renderButton(loginContainer, btnConfig);
+  if (registerContainer) google.accounts.id.renderButton(registerContainer, { ...btnConfig, text: 'signup_with' });
 }
 
 function handleGoogleCredentialResponse(response) {
   try {
-    // Decode the JWT credential (base64 decode the payload)
     const base64Url = response.credential.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(atob(base64));
-    
-    const googleUser = {
-      email: payload.email,
-      name: payload.name,
-      picture: payload.picture,
-      role: 'customer',
+    const base64    = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload   = JSON.parse(atob(base64));
+
+    loginUser({
+      email:    payload.email,
+      name:     payload.name,
+      picture:  payload.picture,
+      role:     'customer',
       googleId: payload.sub
-    };
-    
-    loginUser(googleUser);
-    showGlobalLoading(false);
-    showToast(`Welcome, ${googleUser.name}! Signed in with Google.`, 'success');
-    
+    });
+
+    showToast(`Welcome, ${payload.name}! ✓ Signed in with Google.`, 'success');
+
     if (localStorage.getItem('simba_redirect_checkout') === 'true') {
       localStorage.removeItem('simba_redirect_checkout');
       navigate('checkout');
     } else {
       navigate('home');
     }
-  } catch (err) {
-    showGlobalLoading(false);
+  } catch {
     showToast('Google sign-in failed. Please try again.', 'error');
   }
 }
 
+// Keep handleGoogleLogin as a no-op in case anything still calls it
 function handleGoogleLogin() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    showToast('Google Sign-In is not available. Check your internet connection.', 'error');
-    return;
-  }
-  showGlobalLoading(true);
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      // Fallback: render button popup manually
-      showGlobalLoading(false);
-      // Create a temporary container for the Google button
-      const tempDiv = document.createElement('div');
-      tempDiv.id = 'google-btn-temp';
-      tempDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#fff;padding:24px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
-      tempDiv.innerHTML = '<p style="margin-bottom:12px;font-weight:600;font-size:14px;color:#2D1200;">Click below to sign in with Google</p>';
-      document.body.appendChild(tempDiv);
-      google.accounts.id.renderButton(tempDiv, {
-        type: 'standard',
-        shape: 'rectangular',
-        theme: 'outline',
-        text: 'signin_with',
-        size: 'large',
-        logo_alignment: 'left'
-      });
-      // Remove after 30s
-      setTimeout(() => { if (document.getElementById('google-btn-temp')) tempDiv.remove(); }, 30000);
-      // Close on outside click
-      setTimeout(() => {
-        const closeHandler = (e) => {
-          if (!tempDiv.contains(e.target)) { tempDiv.remove(); document.removeEventListener('click', closeHandler); }
-        };
-        document.addEventListener('click', closeHandler);
-      }, 100);
-    }
-  });
+  showToast('Click the "Continue with Google" button.', 'info');
 }
 
 function loginUser(userData) {
