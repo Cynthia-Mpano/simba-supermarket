@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simba Supermarket - Rwanda's Premium Online Shop</title>
   <link rel="icon" type="image/avif" href="simba logo.avif">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#FD882A">
+  <meta name="description" content="Rwanda's Premier Online Supermarket — shop fresh groceries and household essentials from Simba Supermarket.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Simba">
   <link rel="stylesheet" href="styles.css">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -124,6 +130,18 @@
             </svg>
             <span data-i18n="nav_dashboard">Dashboard</span>
           </a>
+
+          <!-- Promotions -->
+          <a href="#" class="nav-btn" onclick="navigate('promotions'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            <span>Deals</span>
+          </a>
+
+          <!-- Wishlist -->
+          <a href="#" class="nav-btn" onclick="navigate('wishlist'); return false;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span>Wishlist</span>
+          </a>
         </div>
 
         <!-- Cart Button -->
@@ -159,6 +177,8 @@
         <a href="#" class="mobile-nav-item" onclick="navigate('about'); closeMobileMenu(); return false;">ℹ️ About</a>
         <a href="#" class="mobile-nav-item" onclick="navigate('contact'); closeMobileMenu(); return false;">📞 Contact</a>
         <a href="#" class="mobile-nav-item" onclick="navigate('dashboard'); closeMobileMenu(); return false;">📊 Dashboard</a>
+        <a href="#" class="mobile-nav-item" onclick="navigate('promotions'); closeMobileMenu(); return false;">🔥 Deals</a>
+        <a href="#" class="mobile-nav-item" onclick="navigate('wishlist'); closeMobileMenu(); return false;">❤️ Wishlist</a>
         <a href="#" class="mobile-nav-item" onclick="navigate('cart'); closeMobileMenu(); return false;">🛒 Cart</a>
         <a href="#" id="mobile-account-btn" class="mobile-nav-item" onclick="handleMobileAccountClick(); return false;">👤 Sign In</a>
         <div class="mobile-nav-divider"></div>
@@ -247,11 +267,35 @@
         </div>
       </div>
 
-      <!-- Categories chips bar -->
-      <div class="filter-bar">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-weight:600; font-size:13px; color:var(--text-medium);" data-i18n="dash_status">Category:</span>
+      <!-- Categories chips bar + advanced filters -->
+      <div class="filter-bar" id="filter-bar" style="position:relative;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1;">
+          <span style="font-weight:600; font-size:13px; color:var(--text-medium);">Category:</span>
           <span id="active-category-indicator" style="font-weight:700; font-size:13px; color:var(--primary-color);">All</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <select id="sort-select" class="filter-select" onchange="handleSortChange(this.value)">
+            <option value="relevance">Sort: Relevance</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="name-asc">Name: A → Z</option>
+          </select>
+          <select id="availability-select" class="filter-select" onchange="handleAvailabilityChange(this.value)">
+            <option value="all">All Items</option>
+            <option value="instock">In Stock Only</option>
+          </select>
+          <div style="position:relative;">
+            <button class="filter-btn" id="price-filter-btn" onclick="togglePricePanel()">💰 Price</button>
+            <div id="price-filter-panel" class="price-filter-panel" style="display:none;">
+              <div style="display:flex; align-items:center; gap:8px; padding:12px; flex-wrap:wrap;">
+                <input type="number" id="price-min-input" class="form-input" style="width:90px; padding:6px 10px; font-size:13px;" placeholder="Min" min="0" value="0">
+                <span style="font-size:12px; color:var(--text-medium);">–</span>
+                <input type="number" id="price-max-input" class="form-input" style="width:100px; padding:6px 10px; font-size:13px;" placeholder="Max" value="999999">
+                <button class="btn btn-primary" style="padding:6px 14px; font-size:12px;" onclick="applyPriceFilter()">Apply</button>
+                <button class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="resetPriceFilter()">Reset</button>
+              </div>
+            </div>
+          </div>
         </div>
         <span class="product-count" id="product-count" data-i18n="loading_products">Loading products...</span>
       </div>
@@ -598,6 +642,10 @@
             <input type="email" id="register-email" class="form-input" placeholder="e.g. user@simba.rw" required>
           </div>
           <div class="form-group">
+            <label for="register-phone">Rwandan Phone Number</label>
+            <input type="tel" id="register-phone" class="form-input" placeholder="e.g. +250 788 123 456">
+          </div>
+          <div class="form-group">
             <label for="register-password" data-i18n="label_password_confirm">Password (min 6 chars)</label>
             <input type="password" id="register-password" class="form-input" placeholder="Create password" required>
           </div>
@@ -655,6 +703,45 @@
               <input type="text" id="checkout-address" class="form-input" placeholder="e.g. KN 78 St, Kiyovu" required>
             </div>
 
+            <div class="form-group">
+              <label for="checkout-zone">Delivery Zone / District</label>
+              <select id="checkout-zone" class="form-input" onchange="handleZoneChange(this.value)" required>
+                <option value="Nyarugenge">Nyarugenge (City Centre) — 1,000 RWF</option>
+                <option value="Gasabo" selected>Gasabo (Remera, Kimironko) — 1,500 RWF</option>
+                <option value="Kicukiro">Kicukiro (Gikondo, Sonatube) — 1,500 RWF</option>
+                <option value="Bugesera">Bugesera — 3,000 RWF</option>
+                <option value="Rwamagana">Rwamagana — 3,500 RWF</option>
+                <option value="Musanze">Musanze (Northern) — 5,000 RWF</option>
+                <option value="Huye">Huye (Southern) — 5,000 RWF</option>
+                <option value="Pickup">🏪 Store Pickup (Free)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="checkout-timeslot">Preferred Delivery Time</label>
+              <select id="checkout-timeslot" class="form-input">
+                <option value="morning">🌅 Morning (8am – 12pm)</option>
+                <option value="afternoon">☀️ Afternoon (12pm – 5pm)</option>
+                <option value="evening">🌆 Evening (5pm – 8pm)</option>
+                <option value="anytime">🕐 Any Time</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-top:16px;">
+              <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; font-weight:600;">
+                <input type="checkbox" id="recurring-order" style="width:18px;height:18px;accent-color:var(--primary-color);">
+                Set as recurring order
+              </label>
+              <div id="recurring-options" style="display:none; margin-top:10px; padding:12px; background:var(--bg-main); border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                <label style="font-size:12px; font-weight:600; color:var(--text-medium); display:block; margin-bottom:6px;">Repeat frequency:</label>
+                <select id="recurring-frequency" class="form-input" style="max-width:200px;">
+                  <option value="weekly">📅 Weekly</option>
+                  <option value="biweekly">📅 Bi-weekly</option>
+                  <option value="monthly">📅 Monthly</option>
+                </select>
+              </div>
+            </div>
+
             <!-- Payment Method Selector -->
             <div class="form-group" style="margin-top:24px;">
               <label style="font-size:13px; font-weight:700; margin-bottom:12px;" data-i18n="payment_method">Payment Method</label>
@@ -695,6 +782,47 @@
     </div>
 
   </main>
+
+  <!-- PROFILE VIEW -->
+  <div id="view-profile" class="app-view" style="display:none;">
+    <section>
+      <h2 style="font-weight:800;font-size:28px;border-bottom:1.5px solid var(--border-color);padding-bottom:12px;">👤 My Account</h2>
+      <div class="static-page-grid" style="margin-top:20px;">
+        <div id="profile-info-col"><!-- rendered by JS --></div>
+        <div>
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--primary-color);">📦 Order History</h3>
+          <div id="profile-orders-list"><!-- rendered by JS --></div>
+        </div>
+      </div>
+      <div style="margin-top:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="font-size:16px;font-weight:700;color:var(--primary-color);">❤️ Saved Items</h3>
+          <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;" onclick="navigate('wishlist')">View All</button>
+        </div>
+        <div id="profile-wishlist-preview" style="display:flex;gap:12px;flex-wrap:wrap;"><!-- rendered by JS --></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- WISHLIST VIEW -->
+  <div id="view-wishlist" class="app-view" style="display:none;">
+    <section>
+      <h2 style="font-weight:800;font-size:28px;border-bottom:1.5px solid var(--border-color);padding-bottom:12px;">❤️ My Wishlist</h2>
+      <div id="wishlist-items" style="margin-top:16px;"><!-- rendered by JS --></div>
+    </section>
+  </div>
+
+  <!-- PROMOTIONS VIEW -->
+  <div id="view-promotions" class="app-view" style="display:none;">
+    <div class="hero-banner">
+      <h1 class="hero-title">🔥 Deals &amp; Promotions</h1>
+      <p class="hero-subtitle">Limited-time flash sale. Stock up on your favourites before the timer runs out!</p>
+    </div>
+    <section>
+      <div id="promotions-countdown"><!-- rendered by JS --></div>
+      <div id="promotions-grid" class="products-grid"><!-- rendered by JS --></div>
+    </section>
+  </div>
 
   <!-- Global Footer -->
   <footer style="background-color: #ffffff; color: var(--text-medium); padding: 24px; margin-top: 60px; text-align: center; font-size: 13px; border-top: 3px solid var(--primary-color);">

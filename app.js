@@ -24,13 +24,20 @@ const state = {
   selectedCategory: 'All',
   products: [],
   currentPage: 'home',
-  loadedCount: 24, // Pagination chunk size
+  loadedCount: 24,
   lastOrder: null,
   language: localStorage.getItem('simba_language') || 'en',
   translations: {},
   theme: localStorage.getItem('simba_theme') || 'light',
   orders: [],
-  dashboardTab: 'orders' // 'orders', 'inventory', 'analytics'
+  dashboardTab: 'orders',
+  // New feature state
+  priceMin: 0,
+  priceMax: 999999,
+  sortBy: 'relevance',
+  availabilityFilter: 'all',
+  wishlist: JSON.parse(localStorage.getItem('simba_wishlist')) || [],
+  selectedDeliveryZone: localStorage.getItem('simba_zone') || 'Gasabo'
 };
 
 // Map each product deterministically to multiple branches using its ID (among the 11 branches)
@@ -64,8 +71,10 @@ const el = {
   checkoutView: document.getElementById('view-checkout'),
   confirmationView: document.getElementById('view-confirmation'),
   dashboardView: document.getElementById('view-dashboard'),
-  
-  // Navigation elements
+  profileView: document.getElementById('view-profile'),
+  wishlistView: document.getElementById('view-wishlist'),
+  promotionsView: document.getElementById('view-promotions'),
+
   homeNavBtn: document.getElementById('nav-home-btn'),
   aboutNavBtn: document.getElementById('nav-about-btn'),
   contactNavBtn: document.getElementById('nav-contact-btn'),
@@ -76,22 +85,19 @@ const el = {
   searchInput: document.getElementById('search-input'),
   langSelector: document.getElementById('lang-select'),
   themeToggleBtn: document.getElementById('theme-toggle-btn'),
-  
-  // Containers
+
   productsGrid: document.getElementById('products-grid'),
   categoryList: document.getElementById('categories-list'),
   productCount: document.getElementById('product-count'),
   loadMoreContainer: document.getElementById('load-more-container'),
   cartItemsList: document.getElementById('cart-items-list'),
   cartSummaryContainer: document.getElementById('cart-summary-container'),
-  
-  // Auth Forms
+
   loginForm: document.getElementById('login-form'),
   registerForm: document.getElementById('register-form'),
   loginTab: document.getElementById('tab-login'),
   registerTab: document.getElementById('tab-register'),
-  
-  // Loader overlay & Toasts
+
   loadingOverlay: document.getElementById('loading-overlay'),
   toastContainer: document.getElementById('toast-container')
 };
@@ -99,15 +105,21 @@ const el = {
 // Initialize Application
 async function init() {
   showGlobalLoading(true);
-  
-  // Initialize Theme preference
+
+  // Respect OS dark mode preference on first load
+  if (!localStorage.getItem('simba_theme')) {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      state.theme = 'dark';
+      localStorage.setItem('simba_theme', 'dark');
+    }
+  }
+
+  // Apply theme
   if (state.theme === 'dark') {
     document.body.classList.add('dark-mode');
   }
-  
-  // Initialize language selector value
+
   el.langSelector.value = state.language;
-  
   // Load Translations
   await loadTranslations(state.language);
   
@@ -143,6 +155,11 @@ async function init() {
   }
   
   initGoogleSignIn();
+
+  // Register service worker (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 }
 
 // Load Translation JSON files
@@ -364,6 +381,15 @@ function setupEventListeners() {
     gateForm.addEventListener('submit', handleGateLoginSubmit);
   }
 
+  // Recurring order toggle
+  const recurringCheck = document.getElementById('recurring-order');
+  if (recurringCheck) {
+    recurringCheck.addEventListener('change', function () {
+      const opts = document.getElementById('recurring-options');
+      if (opts) opts.style.display = this.checked ? 'block' : 'none';
+    });
+  }
+
   // Mobile hamburger menu toggle
   const mobileMenuBtn = document.getElementById('mobile-menu-btn');
   if (mobileMenuBtn) {
@@ -408,20 +434,11 @@ function setupEventListeners() {
 function navigate(page) {
   state.currentPage = page;
   updateHash(page);
-  
-  // Toggle visibility of views
-  el.homeView.classList.remove('active');
-  el.aboutView.classList.remove('active');
-  el.contactView.classList.remove('active');
-  el.cartView.classList.remove('active');
-  el.authView.classList.remove('active');
-  el.checkoutView.classList.remove('active');
-  el.confirmationView.classList.remove('active');
-  el.dashboardView.classList.remove('active');
-  
-  // Set navbar buttons as active or inactive
+
+  // Hide all views
+  document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-links .nav-btn').forEach(btn => btn.classList.remove('active'));
-  
+
   if (page === 'home') {
     el.homeView.classList.add('active');
     renderProducts();
@@ -442,14 +459,18 @@ function navigate(page) {
   } else if (page === 'confirmation') {
     el.confirmationView.classList.add('active');
     renderOrderConfirmation();
+  } else if (page === 'profile') {
+    if (!state.user) { navigate('auth'); return; }
+    if (el.profileView) { el.profileView.classList.add('active'); renderProfile(); }
+  } else if (page === 'wishlist') {
+    if (el.wishlistView) { el.wishlistView.classList.add('active'); renderWishlist(); }
+  } else if (page === 'promotions') {
+    if (el.promotionsView) { el.promotionsView.classList.add('active'); renderPromotions(); }
   } else if (page === 'dashboard') {
     el.dashboardView.classList.add('active');
     el.dashboardNavBtn.classList.add('active');
-    
-    // Show login gate if not logged in as representative
     const gate = document.getElementById('dashboard-login-gate');
     const content = document.getElementById('dashboard-content');
-    
     if (!state.user || state.user.role !== 'representative') {
       gate.style.display = 'block';
       content.style.display = 'none';
@@ -459,44 +480,74 @@ function navigate(page) {
       renderDashboard();
     }
   }
-  
-  // Remove home button when already on home page, keep elsewhere
+
   if (page === 'home') {
     el.homeNavBtn.classList.add('hidden');
   } else {
     el.homeNavBtn.classList.remove('hidden');
   }
-  
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  closeMobileMenu();
+}
+
+// Kigali delivery zones
+const KIGALI_ZONES = {
+  'Nyarugenge': { fee: 1000, label: 'Nyarugenge (City Centre)' },
+  'Gasabo':     { fee: 1500, label: 'Gasabo (Remera, Kimironko)' },
+  'Kicukiro':   { fee: 1500, label: 'Kicukiro (Gikondo, Sonatube)' },
+  'Bugesera':   { fee: 3000, label: 'Bugesera' },
+  'Rwamagana':  { fee: 3500, label: 'Rwamagana' },
+  'Musanze':    { fee: 5000, label: 'Musanze (Northern)' },
+  'Huye':       { fee: 5000, label: 'Huye (Southern)' },
+  'Pickup':     { fee: 0,    label: 'Store Pickup (Free)' }
+};
+
+function getDeliveryFee() {
+  const subtotal = state.cart.reduce((s, i) => s + i.product.price * i.quantity, 0);
+  if (subtotal >= 50000) return 0;
+  if (subtotal === 0) return 0;
+  const zone = KIGALI_ZONES[state.selectedDeliveryZone];
+  return zone ? zone.fee : 1500;
+}
+
+// Stock level helper
+function getStockLevel(product) {
+  if (!product.inStock) return { level: 'outofstock', label: 'Out of Stock', emoji: '🔴' };
+  if (product.id % 10 <= 2) return { level: 'lowstock', label: 'Low Stock', emoji: '🟡' };
+  return { level: 'instock', label: 'In Stock', emoji: '🟢' };
 }
 
 // Products list branch availability filter
 function getFilteredProducts() {
-  return state.products.filter(product => {
-    // 1. Stock Status filtering
-    if (!product.inStock) {
-      return false;
-    }
-    
-    // 2. Branch selector filtering
-    if (state.selectedBranch !== 'All Branches' && !product.branches.includes(state.selectedBranch)) {
-      return false;
-    }
-    
-    // 3. Category selector chips filtering
-    if (state.selectedCategory !== 'All' && product.category !== state.selectedCategory) {
-      return false;
-    }
-    
-    // 4. Search bar query filtering
+  let filtered = state.products.filter(product => {
+    // Availability filter (if 'instock' only show inStock products, else show all)
+    if (state.availabilityFilter === 'instock' && !product.inStock) return false;
+
+    // Branch filter
+    if (state.selectedBranch !== 'All Branches' && !product.branches.includes(state.selectedBranch)) return false;
+
+    // Category filter
+    if (state.selectedCategory !== 'All' && product.category !== state.selectedCategory) return false;
+
+    // Price range filter
+    if (product.price < state.priceMin || product.price > state.priceMax) return false;
+
+    // Search query
     if (state.searchQuery) {
-      const nameMatch = product.name.toLowerCase().includes(state.searchQuery);
-      const catMatch = product.category.toLowerCase().includes(state.searchQuery);
-      if (!nameMatch && !catMatch) return false;
+      const q = state.searchQuery;
+      if (!product.name.toLowerCase().includes(q) && !product.category.toLowerCase().includes(q)) return false;
     }
-    
+
     return true;
   });
+
+  // Sort
+  if (state.sortBy === 'price-asc')  filtered.sort((a, b) => a.price - b.price);
+  else if (state.sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+  else if (state.sortBy === 'name-asc')  filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+  return filtered;
 }
 
 // Render Products Grid Cards (padding: 16px, margin: 12px, image size >= 200px object-fit cover)
@@ -532,7 +583,8 @@ function renderProducts() {
     card.innerHTML = `
       <div class="product-card-image-wrapper" onclick="openProductModal(${product.id})" style="cursor: pointer;">
         <img class="product-card-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" data-src="${product.image}" alt="${product.name}" loading="lazy">
-        <span class="product-card-badge">${product.inStock ? 'In Stock' : 'Out of Stock'}</span>
+        <span class="product-card-badge stock-${getStockLevel(product).level}">${getStockLevel(product).emoji} ${getStockLevel(product).label}</span>
+        <button class="btn-wishlist ${state.wishlist.includes(product.id) ? 'active' : ''}" onclick="event.stopPropagation(); toggleWishlist(${product.id})" title="Add to Wishlist" aria-label="Add to Wishlist" style="position:absolute;top:8px;right:8px;z-index:2;">♥</button>
       </div>
       <div class="product-card-info">
         <span class="product-card-category">${product.category}</span>
@@ -542,12 +594,12 @@ function renderProducts() {
             <span class="product-card-unit">per ${product.unit}</span>
             <span class="product-card-price">${formatNumber(product.price)}</span>
           </div>
-          ${product.inStock 
+          ${product.inStock
             ? `<button class="btn-card-add" onclick="event.stopPropagation(); addToCartById(${product.id})">
                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                  ${labelAdd}${inCartQty > 0 ? ` (${inCartQty})` : ''}
                </button>`
-            : `<button class="btn-card-add" style="background-color: var(--text-light); cursor: not-allowed;" disabled>${state.translations.sold_out || 'Sold Out'}</button>`
+            : `<button class="btn-card-add" style="background-color:var(--text-light);cursor:not-allowed;" disabled onclick="event.stopPropagation(); notifyMeWhenInStock(${product.id})">🔔 Notify Me</button>`
           }
         </div>
       </div>
@@ -773,7 +825,7 @@ function updateCartBadge() {
 
 function getCartTotals() {
   const subtotal = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-  const delivery = subtotal > 50000 || subtotal === 0 ? 0 : 2500;
+  const delivery = getDeliveryFee();
   const total = subtotal + delivery;
   return { subtotal, delivery, total };
 }
@@ -849,6 +901,30 @@ function renderCart() {
       </button>
     </div>
   `;
+
+  // Cart upsell — complementary products
+  if (state.products.length > 0) {
+    const cartCats = [...new Set(state.cart.map(i => i.product.category))];
+    const upsell = state.products
+      .filter(p => cartCats.includes(p.category) && p.inStock && !state.cart.find(c => c.product.id === p.id))
+      .slice(0, 5);
+    if (upsell.length > 0) {
+      const upsellEl = document.createElement('div');
+      upsellEl.style.cssText = 'margin-top:20px; padding:16px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-md);';
+      upsellEl.innerHTML = `
+        <h4 style="font-size:13px; font-weight:700; margin-bottom:10px; color:var(--text-medium);">💡 You might also like</h4>
+        <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none;">
+          ${upsell.map(p => `
+            <div style="flex-shrink:0; width:100px; cursor:pointer;" onclick="openProductModal(${p.id})">
+              <img src="${p.image}" style="width:100%;height:72px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+              <div style="font-size:10px; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-medium);">${p.name}</div>
+              <div style="font-size:11px; font-weight:700; color:var(--primary-color);">${formatNumber(p.price)} RWF</div>
+              <button class="btn-card-add" style="width:100%; margin-top:4px; font-size:10px; padding:4px;" onclick="event.stopPropagation(); addToCartById(${p.id})">+ Add</button>
+            </div>`).join('')}
+        </div>`;
+      el.cartItemsList.appendChild(upsellEl);
+    }
+  }
 }
 
 // Redirect to checkout with auth gate
@@ -938,37 +1014,37 @@ function handleLoginSubmit(e) {
   }, 1000);
 }
 
-// Register accounts submissions
 function handleRegisterSubmit(e) {
   e.preventDefault();
   const name = document.getElementById('register-name').value.trim();
   const email = document.getElementById('register-email').value.trim();
+  const phone = (document.getElementById('register-phone') || {}).value?.trim() || '';
   const password = document.getElementById('register-password').value;
   const feedback = document.getElementById('register-feedback');
-  
+
   feedback.className = 'form-feedback';
   feedback.style.display = 'none';
-  
+
   if (!name || !email || !password) {
-    feedback.textContent = 'Please fill out all fields.';
+    feedback.textContent = 'Please fill out all required fields.';
     feedback.classList.add('error');
     return;
   }
-  
+
   if (password.length < 6) {
     feedback.textContent = 'Password must be at least 6 characters.';
     feedback.classList.add('error');
     return;
   }
-  
+
   const submitBtn = el.registerForm.querySelector('button[type="submit"]');
   const originalText = submitBtn.innerHTML;
   submitBtn.innerHTML = `<div class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></div>`;
   submitBtn.disabled = true;
-  
+
   setTimeout(() => {
     const users = JSON.parse(localStorage.getItem('simba_registered_users')) || [];
-    
+
     if (users.some(u => u.email === email)) {
       feedback.textContent = 'An account with this email already exists.';
       feedback.classList.add('error');
@@ -976,21 +1052,21 @@ function handleRegisterSubmit(e) {
       submitBtn.disabled = false;
       return;
     }
-    
-    users.push({ name, email, password });
+
+    users.push({ name, email, password, phone });
     localStorage.setItem('simba_registered_users', JSON.stringify(users));
-    
-    loginUser({ name, email, role: 'customer' });
+
+    loginUser({ name, email, role: 'customer', phone });
     showToast('Account registered successfully!', 'success');
     el.registerForm.reset();
-    
+
     if (localStorage.getItem('simba_redirect_checkout') === 'true') {
       localStorage.removeItem('simba_redirect_checkout');
       navigate('checkout');
     } else {
       navigate('home');
     }
-    
+
     submitBtn.innerHTML = originalText;
     submitBtn.disabled = false;
   }, 1200);
@@ -1096,22 +1172,23 @@ function logoutUser() {
 
 function updateAuthNavigation() {
   const mobileAccountBtn = document.getElementById('mobile-account-btn');
-  
+
   if (state.user) {
     const initials = state.user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarHtml = state.user.picture
       ? `<img src="${state.user.picture}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:2px solid var(--primary-color);" alt="Profile" referrerpolicy="no-referrer">`
       : `<div style="width:22px;height:22px;border-radius:50%;background-color:var(--primary-color);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:10px;">${initials}</div>`;
-    
-    el.accountNavBtn.innerHTML = `${avatarHtml}<span data-i18n="nav_logout">${state.translations.nav_logout || 'Log Out'}</span>`;
+
+    el.accountNavBtn.innerHTML = `${avatarHtml}<span>${state.user.name.split(' ')[0]}</span>`;
+    el.accountNavBtn.onclick = (e) => { e.preventDefault(); navigate('profile'); };
     el.dashboardNavBtn.style.display = 'flex';
-    
-    if (mobileAccountBtn) mobileAccountBtn.textContent = `👤 ${state.user.name.split(' ')[0]} (Log Out)`;
+    if (mobileAccountBtn) mobileAccountBtn.textContent = `👤 ${state.user.name.split(' ')[0]} (Profile)`;
   } else {
     el.accountNavBtn.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       <span data-i18n="nav_signin">${state.translations.nav_signin || 'Sign In'}</span>
     `;
+    el.accountNavBtn.onclick = (e) => { e.preventDefault(); navigate('auth'); };
     el.dashboardNavBtn.style.display = 'flex';
     if (mobileAccountBtn) mobileAccountBtn.textContent = '👤 Sign In';
   }
@@ -1543,74 +1620,101 @@ function renderDashboardAnalytics() {
   `;
 }
 
-// Product Details Modal Overlay loader - Enhanced with full description
+// Product Details Modal Overlay loader - Enhanced with full description + reviews
 function openProductModal(productId) {
   const product = state.products.find(p => p.id === productId);
   if (!product) return;
-  
+
   const modal = document.getElementById('product-detail-modal');
-  const body = document.getElementById('modal-body');
-  
-  const cartItem = state.cart.find(item => item.product.id === product.id);
+  const body  = document.getElementById('modal-body');
+
+  const cartItem  = state.cart.find(item => item.product.id === product.id);
   const inCartQty = cartItem ? cartItem.quantity : 0;
+  const stock     = getStockLevel(product);
+  const isWished  = state.wishlist.includes(product.id);
 
-  // Generate a rich product description from available data
   const descriptionMap = {
-    'Food Products': 'A high-quality food product carefully selected by Simba Supermarket to ensure freshness, safety, and great taste for you and your family.',
-    'Alcoholic Drinks': 'Premium imported beverage available in select Simba branches. Responsibly enjoy this product. Must be 18+ to purchase.',
+    'Food Products':             'A high-quality food product carefully selected by Simba Supermarket to ensure freshness, safety, and great taste.',
+    'Alcoholic Drinks':          'Premium beverage available in select Simba branches. Enjoy responsibly. Must be 18+ to purchase.',
     'Cosmetics & Personal Care': 'A trusted personal care product sourced to maintain your health, hygiene, and daily wellness routine.',
-    'Baby Products': 'Safe, tested, and certified product designed specifically for babies and young children. Gentle and effective.',
-    'Kitchenware & Electronics': 'A durable kitchenware or electronics item that enhances your home cooking and everyday lifestyle experience.',
-    'Sports & Wellness': 'Designed to support an active and healthy lifestyle. Perfect for fitness enthusiasts and wellness-focused individuals.',
-    'General': 'A versatile everyday product available across Simba Supermarket branches, known for great quality and value.'
+    'Baby Products':             'Safe, tested, and certified product designed for babies and young children. Gentle and effective.',
+    'Kitchenware & Electronics': 'A durable kitchenware or electronics item that enhances your home cooking and everyday lifestyle.',
+    'Sports & Wellness':         'Designed to support an active and healthy lifestyle. Perfect for fitness-focused individuals.',
+    'General':                   'A versatile everyday product available across Simba branches, known for great quality and value.'
   };
+  const description = product.description || descriptionMap[product.category] || `${product.name} — available at Simba Supermarket.`;
 
-  const description = product.description || descriptionMap[product.category] || 
-    `${product.name} is a quality product available at Simba Supermarket. Sold per ${product.unit} at an affordable price. Available in selected branches.`;
+  // Reviews
+  const reviews = JSON.parse(localStorage.getItem('simba_reviews')) || {};
+  const productReviews = reviews[productId] || [];
+  const avgRating = productReviews.length ? (productReviews.reduce((s,r)=>s+r.rating,0)/productReviews.length).toFixed(1) : null;
+
+  const reviewsHtml = `
+    <div style="margin-top:20px;border-top:1px solid var(--border-color);padding-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h4 style="font-size:14px;font-weight:700;">Customer Reviews</h4>
+        ${avgRating ? `<span style="background:var(--primary-color);color:#fff;padding:3px 10px;border-radius:20px;font-weight:700;font-size:13px;">★ ${avgRating}</span>` : ''}
+      </div>
+      ${productReviews.length === 0
+        ? '<p style="font-size:13px;color:var(--text-medium);">No reviews yet. Be the first!</p>'
+        : productReviews.slice(-3).reverse().map(r => `
+            <div style="padding:10px;background:var(--bg-main);border-radius:var(--radius-sm);margin-bottom:8px;border:1px solid var(--border-color);">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <strong style="font-size:13px;">${r.userName}</strong>
+                <span style="color:var(--primary-color);font-weight:700;font-size:14px;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-medium);margin-bottom:2px;">${r.text}</p>
+              <span style="font-size:10px;color:var(--text-light);">${r.date}</span>
+            </div>`).join('')}
+      ${state.user ? `
+        <form onsubmit="submitReview(event,${productId})" style="margin-top:12px;">
+          <div style="display:flex;gap:4px;margin-bottom:8px;" id="review-stars-${productId}">
+            ${[1,2,3,4,5].map(i=>`<span class="review-star" style="font-size:24px;cursor:pointer;color:var(--border-color);transition:color 0.15s;" onclick="setReviewRating(${productId},${i})">★</span>`).join('')}
+          </div>
+          <input type="hidden" id="review-rating-${productId}" value="0">
+          <textarea class="form-input" id="review-text-${productId}" rows="2" placeholder="Write your review…" required style="resize:none;margin-bottom:8px;font-size:13px;"></textarea>
+          <button class="btn btn-primary" type="submit" style="padding:8px 20px;font-size:13px;">Submit Review</button>
+        </form>`
+        : `<p style="font-size:12px;color:var(--text-medium);margin-top:8px;"><a href="#" onclick="navigate('auth');return false;" style="color:var(--primary-color);font-weight:600;">Sign in</a> to write a review.</p>`}
+    </div>`;
 
   body.innerHTML = `
     <div class="modal-body-layout">
       <div>
-        <img src="${product.image}" alt="${product.name}" class="modal-product-img">
+        <img src="${product.image}" alt="${product.name}" class="modal-product-img" loading="lazy">
       </div>
-      <div style="display:flex; flex-direction:column; justify-content:space-between;">
+      <div style="display:flex;flex-direction:column;justify-content:space-between;">
         <div>
           <div class="modal-product-category">${product.category}</div>
           <h3 class="modal-product-name">${product.name}</h3>
-          
-          <span class="modal-product-badge ${product.inStock ? 'instock' : 'outofstock'}">
-            ${product.inStock ? '✓ In Stock' : '✗ Out of Stock'}
+          <span class="modal-product-badge ${stock.level === 'instock' ? 'instock' : stock.level === 'lowstock' ? 'lowstock' : 'outofstock'}">
+            ${stock.emoji} ${stock.label}
           </span>
-
-          <div class="modal-product-price">${formatNumber(product.price)} <span style="font-size:14px; font-weight:500; color:var(--text-medium);">RWF</span></div>
+          <div class="modal-product-price">${formatNumber(product.price)} <span style="font-size:14px;font-weight:500;color:var(--text-medium);">RWF</span></div>
           <div class="modal-product-unit">Per ${product.unit}</div>
-
           <div class="modal-description-label">Product Description</div>
           <div class="modal-description-text">${description}</div>
-
           <div class="modal-description-label">Available at Branches</div>
           <div class="modal-branches-list">
-            ${product.branches.map(b => `<span class="modal-branch-chip">📍 ${b}</span>`).join('')}
+            ${product.branches.map(b=>`<span class="modal-branch-chip">📍 ${b}</span>`).join('')}
           </div>
-
-          <div style="display:flex; gap:16px; font-size:12px; color:var(--text-medium); margin-bottom:16px; flex-wrap:wrap;">
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--text-medium);margin-bottom:16px;flex-wrap:wrap;">
             <span>🏷️ <strong>SKU:</strong> ${product.id}</span>
             <span>📦 <strong>Unit:</strong> ${product.unit}</span>
-            <span>🗂️ <strong>Category:</strong> ${product.category}</span>
           </div>
         </div>
-        
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-          ${product.inStock 
-            ? `<button class="btn btn-primary" style="flex:1; min-width:140px; padding:12px 16px; font-size:13px;" onclick="addToCartById(${product.id}); closeProductModal();">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          ${product.inStock
+            ? `<button class="btn btn-primary" style="flex:1;min-width:130px;padding:12px 16px;font-size:13px;" onclick="addToCartById(${product.id});closeProductModal();">
                  🛒 Add to Cart${inCartQty > 0 ? ` (${inCartQty})` : ''}
                </button>`
-            : `<button class="btn" style="flex:1; background-color:var(--text-light); color:white; cursor:not-allowed; padding:12px 16px; font-size:13px;" disabled>Sold Out</button>`
-          }
-          <button class="btn btn-outline" onclick="closeProductModal()" style="padding:12px 16px; font-size:13px;">Close</button>
+            : `<button class="btn btn-primary" style="flex:1;padding:12px 16px;font-size:13px;" onclick="notifyMeWhenInStock(${product.id})">🔔 Notify Me</button>`}
+          <button class="btn-wishlist ${isWished?'active':''}" onclick="toggleWishlist(${product.id});this.classList.toggle('active');" title="${isWished?'Remove from':'Add to'} wishlist" aria-label="Toggle wishlist" style="font-size:24px;padding:8px;">♥</button>
+          <button class="btn btn-outline" onclick="closeProductModal()" style="padding:12px 16px;font-size:13px;">Close</button>
         </div>
       </div>
     </div>
+    ${reviewsHtml}
   `;
   modal.style.display = 'flex';
 }
@@ -1658,6 +1762,321 @@ function selectFoodCategory(category) {
   }
 }
 window.selectFoodCategory = selectFoodCategory;
+
+// ── FILTER CONTROLS ──────────────────────────────────────────
+function handleSortChange(val) {
+  state.sortBy = val;
+  state.loadedCount = 24;
+  renderProducts();
+}
+window.handleSortChange = handleSortChange;
+
+function handleAvailabilityChange(val) {
+  state.availabilityFilter = val;
+  state.loadedCount = 24;
+  renderProducts();
+}
+window.handleAvailabilityChange = handleAvailabilityChange;
+
+function togglePricePanel() {
+  const panel = document.getElementById('price-filter-panel');
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+window.togglePricePanel = togglePricePanel;
+
+function applyPriceFilter() {
+  const min = parseInt(document.getElementById('price-min-input').value) || 0;
+  const max = parseInt(document.getElementById('price-max-input').value) || 999999;
+  state.priceMin = min;
+  state.priceMax = max;
+  state.loadedCount = 24;
+  document.getElementById('price-filter-panel').style.display = 'none';
+  renderProducts();
+  showToast(`Price: ${formatNumber(min)} – ${formatNumber(max)} RWF`, 'success');
+}
+window.applyPriceFilter = applyPriceFilter;
+
+function resetPriceFilter() {
+  state.priceMin = 0;
+  state.priceMax = 999999;
+  const minEl = document.getElementById('price-min-input');
+  const maxEl = document.getElementById('price-max-input');
+  if (minEl) minEl.value = '0';
+  if (maxEl) maxEl.value = '999999';
+  state.loadedCount = 24;
+  const panel = document.getElementById('price-filter-panel');
+  if (panel) panel.style.display = 'none';
+  renderProducts();
+  showToast('Price filter reset', 'info');
+}
+window.resetPriceFilter = resetPriceFilter;
+
+// ── WISHLIST ──────────────────────────────────────────────────
+function toggleWishlist(productId) {
+  if (!state.user) {
+    showToast('Please sign in to save favourites.', 'info');
+    navigate('auth');
+    return;
+  }
+  const idx = state.wishlist.indexOf(productId);
+  if (idx > -1) {
+    state.wishlist.splice(idx, 1);
+    showToast('Removed from wishlist', 'info');
+  } else {
+    state.wishlist.push(productId);
+    showToast('Added to wishlist ❤️', 'success');
+  }
+  localStorage.setItem('simba_wishlist', JSON.stringify(state.wishlist));
+  if (state.currentPage === 'wishlist') renderWishlist();
+  else if (state.currentPage === 'home') renderProducts();
+}
+window.toggleWishlist = toggleWishlist;
+
+function renderWishlist() {
+  const container = document.getElementById('wishlist-items');
+  if (!container) return;
+  const wishlistProducts = state.products.filter(p => state.wishlist.includes(p.id));
+  if (wishlistProducts.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:48px; color:var(--text-medium);">
+        <div style="font-size:52px; margin-bottom:12px;">❤️</div>
+        <h3 style="margin-bottom:8px;">Your wishlist is empty</h3>
+        <p style="margin-bottom:20px; font-size:14px;">Save products you love for easy access later.</p>
+        <button class="btn btn-primary" onclick="navigate('home')">Browse Products</button>
+      </div>`;
+    return;
+  }
+  container.innerHTML = wishlistProducts.map(product => {
+    const stock = getStockLevel(product);
+    return `
+      <div class="wishlist-item">
+        <img src="${product.image}" alt="${product.name}" class="wishlist-item-img" onclick="openProductModal(${product.id})" style="cursor:pointer;" loading="lazy">
+        <div class="wishlist-item-info">
+          <span style="font-size:11px; color:var(--text-light); text-transform:uppercase; font-weight:600;">${product.category}</span>
+          <h4 style="font-size:14px; font-weight:700; margin:4px 0 6px; cursor:pointer;" onclick="openProductModal(${product.id})">${product.name}</h4>
+          <span class="stock-badge ${stock.level}">${stock.emoji} ${stock.label}</span>
+          <div style="font-size:18px; font-weight:800; color:var(--primary-color); margin-top:8px;">${formatNumber(product.price)} <span style="font-size:12px;font-weight:500;">RWF</span></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; flex-shrink:0;">
+          ${product.inStock
+            ? `<button class="btn btn-primary" style="padding:8px 16px; font-size:12px; white-space:nowrap;" onclick="addToCartById(${product.id}); toggleWishlist(${product.id})">🛒 Move to Cart</button>`
+            : `<button class="btn" style="padding:8px 16px; font-size:12px; background:var(--text-light); color:#fff; cursor:not-allowed;" disabled>Out of Stock</button>`}
+          <button class="btn btn-outline" style="padding:8px 16px; font-size:12px;" onclick="toggleWishlist(${product.id})">🗑️ Remove</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+window.renderWishlist = renderWishlist;
+
+function notifyMeWhenInStock(productId) {
+  const waitlist = JSON.parse(localStorage.getItem('simba_waitlist')) || [];
+  if (!waitlist.includes(productId)) {
+    waitlist.push(productId);
+    localStorage.setItem('simba_waitlist', JSON.stringify(waitlist));
+    showToast('You will be notified when this item is back in stock! 🔔', 'success');
+  } else {
+    showToast('You are already on the waitlist for this product.', 'info');
+  }
+}
+window.notifyMeWhenInStock = notifyMeWhenInStock;
+
+// ── PROFILE PAGE ──────────────────────────────────────────────
+function renderProfile() {
+  if (!state.user) { navigate('auth'); return; }
+
+  const col = document.getElementById('profile-info-col');
+  if (!col) return;
+
+  const initials = state.user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const avatarHtml = state.user.picture
+    ? `<img src="${state.user.picture}" style="width:88px;height:88px;border-radius:50%;object-fit:cover;border:3px solid var(--primary-color);" referrerpolicy="no-referrer" alt="Profile">`
+    : `<div style="width:88px;height:88px;border-radius:50%;background:var(--primary-color);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;">${initials}</div>`;
+
+  const myOrders = state.orders.filter(o => o.email === state.user.email);
+
+  col.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px;background:var(--bg-main);border-radius:var(--radius-md);border:1px solid var(--border-color);text-align:center;">
+      ${avatarHtml}
+      <h3 style="font-size:20px;font-weight:800;">${state.user.name}</h3>
+      <p style="color:var(--text-medium);font-size:13px;">${state.user.email}</p>
+      ${state.user.phone ? `<p style="color:var(--text-medium);font-size:13px;">📱 ${state.user.phone}</p>` : ''}
+      <span style="background:var(--primary-light);color:var(--primary-color);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;text-transform:uppercase;">${state.user.role || 'Customer'}</span>
+      <div style="display:flex;gap:24px;margin-top:8px;">
+        <div><div style="font-size:24px;font-weight:800;color:var(--primary-color);">${myOrders.length}</div><div style="font-size:11px;color:var(--text-medium);">Orders</div></div>
+        <div><div style="font-size:24px;font-weight:800;color:var(--primary-color);">${state.wishlist.length}</div><div style="font-size:11px;color:var(--text-medium);">Wishlist</div></div>
+        <div><div style="font-size:24px;font-weight:800;color:var(--primary-color);">${state.cart.reduce((s,i)=>s+i.quantity,0)}</div><div style="font-size:11px;color:var(--text-medium);">In Cart</div></div>
+      </div>
+      <div style="display:flex;gap:8px;width:100%;margin-top:4px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" style="flex:1;padding:8px;font-size:12px;" onclick="navigate('wishlist')">❤️ Wishlist</button>
+        <button class="btn btn-secondary" style="flex:1;padding:8px;font-size:12px;" onclick="navigate('cart')">🛒 Cart</button>
+        <button class="btn btn-outline" style="flex:1;padding:8px;font-size:12px;" onclick="if(confirm('Log out?'))logoutUser()">🚪 Log Out</button>
+      </div>
+    </div>`;
+
+  // Order history
+  const ordersList = document.getElementById('profile-orders-list');
+  if (!ordersList) return;
+  if (myOrders.length === 0) {
+    ordersList.innerHTML = `<p style="color:var(--text-medium);font-size:14px;padding:16px;text-align:center;">No orders yet. <a href="#" onclick="navigate('home');return false;" style="color:var(--primary-color);font-weight:600;">Start shopping!</a></p>`;
+  } else {
+    ordersList.innerHTML = myOrders.map(order => `
+      <div style="border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;background:var(--bg-card);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+          <strong style="font-size:13px;font-family:monospace;color:var(--primary-color);">${order.orderId}</strong>
+          <span class="status-pill ${order.status}">${order.status}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-medium);margin-bottom:8px;">📅 ${order.date} · 📍 ${order.branch} · <strong>${formatNumber(order.amount)} RWF</strong></div>
+        <div class="order-timeline">
+          <div class="timeline-step ${['pending','paid','delivered'].includes(order.status)?'done':''}">📦</div>
+          <div class="timeline-line ${['paid','delivered'].includes(order.status)?'done':''}"></div>
+          <div class="timeline-step ${['paid','delivered'].includes(order.status)?'done':''}">💳</div>
+          <div class="timeline-line ${order.status==='delivered'?'done':''}"></div>
+          <div class="timeline-step ${order.status==='delivered'?'done':''}">✅</div>
+        </div>
+        <button class="btn btn-secondary" style="padding:6px 14px;font-size:11px;margin-top:12px;" onclick="reorderFromHistory('${order.orderId}')">🔄 Buy Again</button>
+      </div>`).join('');
+  }
+
+  // Wishlist preview
+  const wishlistPreview = document.getElementById('profile-wishlist-preview');
+  if (wishlistPreview) {
+    const wl = state.products.filter(p => state.wishlist.includes(p.id)).slice(0, 5);
+    wishlistPreview.innerHTML = wl.length === 0
+      ? `<p style="color:var(--text-medium);font-size:13px;">No saved items yet.</p>`
+      : wl.map(p => `
+          <div style="width:90px;text-align:center;cursor:pointer;flex-shrink:0;" onclick="openProductModal(${p.id})">
+            <img src="${p.image}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border-color);" loading="lazy">
+            <div style="font-size:10px;margin-top:4px;color:var(--text-medium);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+          </div>`).join('');
+  }
+}
+window.renderProfile = renderProfile;
+
+// Smart reorder — Buy Again
+function reorderFromHistory(orderId) {
+  const order = state.orders.find(o => o.orderId === orderId);
+  if (!order) return;
+  let added = 0;
+  order.items.forEach(item => {
+    const product = state.products.find(p => p.id === item.product.id);
+    if (product && product.inStock) {
+      const existing = state.cart.find(c => c.product.id === product.id);
+      if (existing) existing.quantity += item.quantity;
+      else state.cart.push({ product, quantity: item.quantity });
+      added++;
+    }
+  });
+  localStorage.setItem('simba_cart', JSON.stringify(state.cart));
+  updateCartBadge();
+  showToast(`${added} item(s) re-added to cart! 🔄`, 'success');
+  navigate('cart');
+}
+window.reorderFromHistory = reorderFromHistory;
+
+// ── DELIVERY ZONE ─────────────────────────────────────────────
+function handleZoneChange(zone) {
+  state.selectedDeliveryZone = zone;
+  localStorage.setItem('simba_zone', zone);
+  renderCheckoutSummary();
+}
+window.handleZoneChange = handleZoneChange;
+
+// ── PRODUCT REVIEWS ───────────────────────────────────────────
+function setReviewRating(productId, val) {
+  const input = document.getElementById(`review-rating-${productId}`);
+  if (input) input.value = val;
+  document.querySelectorAll(`#review-stars-${productId} .review-star`).forEach((s, i) => {
+    s.style.color = i < val ? 'var(--primary-color)' : 'var(--border-color)';
+  });
+}
+window.setReviewRating = setReviewRating;
+
+function submitReview(e, productId) {
+  e.preventDefault();
+  const rating = parseInt((document.getElementById(`review-rating-${productId}`) || {}).value || '0');
+  const textEl = document.getElementById(`review-text-${productId}`);
+  const text = textEl ? textEl.value.trim() : '';
+  if (!rating) { showToast('Please select a star rating.', 'error'); return; }
+  if (!text)   { showToast('Please write a review.', 'error'); return; }
+
+  const reviews = JSON.parse(localStorage.getItem('simba_reviews')) || {};
+  if (!reviews[productId]) reviews[productId] = [];
+  reviews[productId].push({
+    userId: state.user.email,
+    userName: state.user.name,
+    rating, text,
+    date: new Date().toLocaleDateString()
+  });
+  localStorage.setItem('simba_reviews', JSON.stringify(reviews));
+  showToast('Review submitted — thank you! ⭐', 'success');
+  openProductModal(productId); // Refresh modal with new review
+}
+window.submitReview = submitReview;
+
+// ── PROMOTIONS PAGE ───────────────────────────────────────────
+function renderPromotions() {
+  const grid = document.getElementById('promotions-grid');
+  const countdownEl = document.getElementById('promotions-countdown');
+  if (!grid) return;
+
+  // 24 sale products
+  const saleProducts = state.products
+    .filter(p => p.inStock && p.price > 3000)
+    .slice(0, 24)
+    .map(p => ({
+      ...p,
+      discountPct: [10, 15, 20, 25, 30][p.id % 5],
+      salePrice: Math.floor(p.price * (1 - [10,15,20,25,30][p.id % 5] / 100))
+    }));
+
+  // Countdown — 48 h window stored in sessionStorage
+  if (!sessionStorage.getItem('simba_sale_end')) {
+    sessionStorage.setItem('simba_sale_end', Date.now() + 48 * 3600000);
+  }
+  const endTime = parseInt(sessionStorage.getItem('simba_sale_end'));
+
+  function tick() {
+    const left = endTime - Date.now();
+    if (!document.getElementById('promotions-countdown')) { clearInterval(window._promoTimer); return; }
+    if (left <= 0) { clearInterval(window._promoTimer); if (countdownEl) countdownEl.innerHTML = '<p style="text-align:center;color:var(--text-medium);">Sale ended.</p>'; return; }
+    const h = String(Math.floor(left / 3600000)).padStart(2,'0');
+    const m = String(Math.floor((left % 3600000) / 60000)).padStart(2,'0');
+    const s = String(Math.floor((left % 60000) / 1000)).padStart(2,'0');
+    if (countdownEl) countdownEl.innerHTML = `
+      <p style="text-align:center;font-size:13px;color:var(--text-medium);margin-bottom:10px;">⏰ Flash sale ends in:</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;">
+        ${[['HOURS',h],['MIN',m],['SEC',s]].map(([l,v]) => `
+          <div style="text-align:center;background:var(--primary-color);color:#fff;padding:12px 18px;border-radius:var(--radius-sm);min-width:64px;">
+            <div style="font-size:26px;font-weight:800;line-height:1;">${v}</div>
+            <div style="font-size:10px;margin-top:2px;">${l}</div>
+          </div>`).join('')}
+      </div>`;
+  }
+  clearInterval(window._promoTimer);
+  window._promoTimer = setInterval(tick, 1000);
+  tick();
+
+  grid.innerHTML = saleProducts.map(p => `
+    <div class="product-card" style="cursor:pointer;position:relative;" onclick="openProductModal(${p.id})">
+      <div style="position:absolute;top:8px;right:8px;background:#DC2626;color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:4px;z-index:2;">-${p.discountPct}%</div>
+      <div class="product-card-image-wrapper">
+        <img class="product-card-img" src="${p.image}" alt="${p.name}" loading="lazy">
+        <span class="product-card-badge stock-instock">🟢 In Stock</span>
+      </div>
+      <div class="product-card-info">
+        <span class="product-card-category">${p.category}</span>
+        <h4 class="product-card-name">${p.name}</h4>
+        <div class="product-card-footer">
+          <div>
+            <div style="font-size:11px;color:var(--text-light);text-decoration:line-through;">${formatNumber(p.price)} RWF</div>
+            <div style="font-size:15px;font-weight:800;color:#DC2626;">${formatNumber(p.salePrice)} RWF</div>
+          </div>
+          <button class="btn-card-add" onclick="event.stopPropagation();addToCartById(${p.id})">🛒 Add</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+window.renderPromotions = renderPromotions;
 
 // Dashboard Login Gate handler
 function handleGateLoginSubmit(e) {
@@ -1763,14 +2182,17 @@ window.handleFeedbackSubmit = handleFeedbackSubmit;
 // ============================================================
 
 const PATH_ROUTE_MAP = {
-  '/admin':     'dashboard',
-  '/dashboard': 'dashboard',
-  '/about':     'about',
-  '/contact':   'contact',
-  '/cart':      'cart',
-  '/auth':      'auth',
-  '/home':      'home',
-  '/':          'home'
+  '/admin':      'dashboard',
+  '/dashboard':  'dashboard',
+  '/about':      'about',
+  '/contact':    'contact',
+  '/cart':       'cart',
+  '/auth':       'auth',
+  '/profile':    'profile',
+  '/wishlist':   'wishlist',
+  '/promotions': 'promotions',
+  '/home':       'home',
+  '/':           'home'
 };
 
 const HASH_ROUTE_MAP = {
@@ -1787,15 +2209,17 @@ const HASH_ROUTE_MAP = {
 // Sync URL when navigating (use path-style on Vercel, hash locally)
 function updateHash(page) {
   const pathMap = {
-    dashboard: '/admin',
-    about:     '/about',
-    contact:   '/contact',
-    cart:      '/cart',
-    auth:      '/auth',
-    home:      '/'
+    dashboard:   '/admin',
+    about:       '/about',
+    contact:     '/contact',
+    cart:        '/cart',
+    auth:        '/auth',
+    profile:     '/profile',
+    wishlist:    '/wishlist',
+    promotions:  '/promotions',
+    home:        '/'
   };
   const newPath = pathMap[page] || '/';
-  // Only push if path actually changed to avoid loop
   if (window.location.pathname !== newPath) {
     history.pushState(null, '', newPath);
   }
